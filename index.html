@@ -22,9 +22,17 @@
 
         <!-- Dynamic Game Dashboard (In-game UI) -->
         <div class="hud" id="hud">
+            <div class="hud-item level-container">
+                <span class="hud-label">LEVEL</span>
+                <span class="hud-value" id="hudLevel">1</span>
+            </div>
             <div class="hud-item score-container">
                 <span class="hud-label">SCORE</span>
                 <span class="hud-value" id="currentScore">00000</span>
+            </div>
+            <div class="hud-item coins-container">
+                <span class="hud-label"><i class="fas fa-coins text-gold"></i> COINS</span>
+                <span class="hud-value" id="hudCoins">000</span>
             </div>
             <div class="hud-item highscore-container">
                 <span class="hud-label"><i class="fas fa-trophy text-gold"></i> BEST</span>
@@ -39,7 +47,7 @@
         <div class="overlay" id="startScreen">
             <div class="menu-card animate-glow">
                 <h1 class="game-title">FOREST<span class="neon-green">PARKOUR 3D</span></h1>
-                <p class="game-subtitle">NEON FOREST RUNNER v3.0</p>
+                <p class="game-subtitle">NEON FOREST RUNNER v4.0</p>
                 
                 <div class="instructions-card">
                     <h3><i class="fas fa-gamepad"></i> BOSHQARISH TARTIBI:</h3>
@@ -50,7 +58,7 @@
                         </div>
                         <div class="guide-item">
                             <span class="key">SPACE</span> / <span class="key"><i class="fas fa-arrow-up"></i></span>
-                            <span class="guide-desc">SAKRASH (W) / Double Jump bor</span>
+                            <span class="guide-desc">SAKRASH (W) / Double Jump va Jetpack</span>
                         </div>
                         <div class="guide-item">
                             <span class="key"><i class="fas fa-arrow-down"></i></span>
@@ -74,6 +82,10 @@
 
                 <div class="stats-card">
                     <div class="stat-row">
+                        <span>Yig'ilgan Tangalar:</span>
+                        <span class="stat-val highlight-gold" id="finalCoins">0</span>
+                    </div>
+                    <div class="stat-row">
                         <span>Erishilgan ball:</span>
                         <span class="stat-val highlight-green" id="finalScore">0</span>
                     </div>
@@ -88,6 +100,33 @@
 
                 <button class="btn btn-secondary animate-pulse" id="restartBtn">
                     <i class="fas fa-redo"></i> QAYTADAN BOSHLASH
+                </button>
+            </div>
+        </div>
+
+        <!-- Glassmorphic Victory Screen Overlay -->
+        <div class="overlay hidden" id="victoryScreen">
+            <div class="menu-card animate-glow">
+                <h1 class="game-title text-gold"><i class="fas fa-crown"></i> G'ALABA <i class="fas fa-crown"></i></h1>
+                <p class="game-subtitle">LEVEL YAKUNLANDI!</p>
+
+                <div class="stats-card">
+                    <div class="stat-row">
+                        <span>Level:</span>
+                        <span class="stat-val highlight-green" id="victoryLevel">1</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Yig'ilgan Tangalar:</span>
+                        <span class="stat-val highlight-gold" id="victoryCoins">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Yakuniy Ball:</span>
+                        <span class="stat-val highlight-green" id="victoryScore">0</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary animate-pulse" id="nextLevelBtn">
+                    <i class="fas fa-arrow-right"></i> KEYINGI LEVEL <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
