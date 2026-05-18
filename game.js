@@ -3,8 +3,9 @@
  * Valley Arcade Grand City Edition: Endless Dark Asphalt Grid, Glowing Side Neon Lampposts,
  * Procedural Skyscrapers with vertical neon stripes, Cyber Katana, Dual Jetpacks,
  * Abundant Gold Coins, 3D Collectible Fruits/Cherries, High-Speed Hover-Cars,
- * Flapping Cyber-Birds, Pitch-Black Day-Sunset-Night themes (Svetlar o'chirilgan!),
- * Dynamic Drop Shadows, and a Massive Victory Finish Gate (Final!) at 1800m.
+ * Flapping Cyber-Birds, Dynamic Real-Time Day-Night Cycle (Tun va yorug' bo'lsin!),
+ * In-game Dynamic Alert Banners (Xabarlar qo'shildi!), Dynamic Drop Shadows, 
+ * and a Massive Victory Finish Gate (Final!) at 1800m.
  * Powered by Three.js. 3-Lane Horizontal Steering.
  */
 
@@ -28,6 +29,11 @@ const hudLevel = document.getElementById('hudLevel');
 const victoryLevelEl = document.getElementById('victoryLevel');
 const victoryCoinsEl = document.getElementById('victoryCoins');
 const victoryScoreEl = document.getElementById('victoryScore');
+
+// Dynamic Alert Notification Banners (Xabarlar!)
+const alertBanner = document.getElementById('alertBanner');
+const alertText = document.getElementById('alertText');
+let alertTimeout = null;
 
 // Buttons & Touch
 const startBtn = document.getElementById('startBtn');
@@ -91,16 +97,39 @@ const COLOR_GOLD = 0xffbe0b;
 const COLOR_RED = 0xff3333;
 const COLOR_CHERRY = 0xff0033;
 
-// Pitch-Black Twilight Sky & Dark Misty themes (Svetlar o'chirilgan!)
+// Day-Night colors
 const COLOR_SKY_DARK = 0x010103;
 const COLOR_MIST_DARK = 0x030107;
+const COLOR_SKY_BLUE = 0x5fa9f8;
+const COLOR_SUN_MIST = 0x9ed2ff;
 
 highScoreEl.textContent = String(highScore).padStart(5, '0');
 hudCoins.textContent = '000';
 hudLevel.textContent = '1';
 
+// --- IN-GAME ALERTS / NOTIFICATION SYSTEM (Xabarlar qo'shildi!) ---
+function showAlert(text, type = 'cyan') {
+    if (alertTimeout) {
+        clearTimeout(alertTimeout);
+    }
+    
+    alertText.textContent = text;
+    
+    // Reset classes
+    alertBanner.className = 'alert-banner';
+    alertBanner.classList.add('alert-' + type);
+    
+    // Slide down / Fade in
+    alertBanner.classList.remove('hidden');
+    
+    // Slide up / Fade out after delay
+    alertTimeout = setTimeout(() => {
+        alertBanner.classList.add('hidden');
+    }, 2200);
+}
+
 function initThree() {
-    // 1. Create Scene with pitch black sky & mysterious cyber fog
+    // 1. Create Scene with pitch black starting sky & mysterious cyber fog
     scene = new THREE.Scene();
     scene.background = new THREE.Color(COLOR_SKY_DARK);
     scene.fog = new THREE.FogExp2(COLOR_MIST_DARK, 0.0085);
@@ -116,13 +145,12 @@ function initThree() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
 
-    // 4. Extremely Dim Lights (Svetni o'chirish/Qorong'i shahar!)
-    ambientLight = new THREE.AmbientLight(0x0e1115, 0.08); // Very dim silhouette lighting
+    // 4. Lights (Will transition in the Day-Night Cycle!)
+    ambientLight = new THREE.AmbientLight(0x0e1115, 0.08); // Dim night silhouette lighting
     scene.add(ambientLight);
 
-    // Dynamic headlights/sunlight is disabled or extremely low to prioritize glowing neons
-    sunLight = new THREE.DirectionalLight(COLOR_CYAN, 0.25);
-    sunLight.position.set(10, 30, 10);
+    sunLight = new THREE.DirectionalLight(0xffffff, 0.25);
+    sunLight.position.set(15, 45, 15);
     scene.add(sunLight);
 
     // 5. Build Endless Asphalt Cyber City Ground (Yam-yashil o'rniga qora shahar yo'li!)
@@ -173,15 +201,12 @@ function createCyberHighway() {
     pathCanvas.height = 128;
     const pctx = pathCanvas.getContext('2d');
     
-    // Pitch black asphalt base
     pctx.fillStyle = '#06060a';
     pctx.fillRect(0, 0, 128, 128);
     
-    // High-tech dark road lanes
     pctx.fillStyle = '#0b0c10';
     pctx.fillRect(25, 0, 78, 128);
     
-    // Grid neon warning lane separators
     pctx.strokeStyle = 'rgba(0, 240, 255, 0.35)'; // Cyan
     pctx.lineWidth = 4;
     pctx.beginPath();
@@ -189,7 +214,6 @@ function createCyberHighway() {
     pctx.moveTo(86, 0); pctx.lineTo(86, 128);
     pctx.stroke();
 
-    // Neon glowing grid border
     pctx.strokeStyle = '#ff007f'; // Pink
     pctx.lineWidth = 6;
     pctx.strokeRect(0, 0, 128, 128);
@@ -213,7 +237,6 @@ function createCyberHighway() {
     groundPath.position.set(0, 0.02, -length / 3); // Elevated
     scene.add(groundPath);
 
-    // Flanking glowing cyber wires
     const wireGeo = new THREE.CylinderGeometry(0.08, 0.08, length, 8);
     const wireMat = new THREE.MeshBasicMaterial({ color: COLOR_PINK });
     
@@ -277,7 +300,6 @@ class Building3D {
         this.side = side; // -1: Left side, 1: Right side
         this.z = z;
 
-        // Randomized premium dimensions
         this.w = 3.2 + Math.random() * 3.5;
         this.h = 16 + Math.random() * 28;
         this.d = 3.2 + Math.random() * 3.5;
@@ -311,12 +333,10 @@ class Building3D {
             emissiveIntensity: 1.4
         });
 
-        // Left front corner
         this.stripe1 = new THREE.Mesh(stripeGeo, stripeMat);
         this.stripe1.position.set(-this.w / 2 - 0.02, this.h / 2, this.d / 2 + 0.02);
         this.group.add(this.stripe1);
 
-        // Right front corner
         this.stripe2 = new THREE.Mesh(stripeGeo, stripeMat);
         this.stripe2.position.set(this.w / 2 + 0.02, this.h / 2, this.d / 2 + 0.02);
         this.group.add(this.stripe2);
@@ -355,16 +375,13 @@ class Building3D {
 }
 
 function create3DBuildings() {
-    // Generate 32 buildings flanking the runway canyon
     const spacing = 28;
     for (let i = 0; i < 18; i++) {
         const z = -i * spacing - 15;
-        // Flank Left and Right
         buildings.push(new Building3D(-1, z));
         buildings.push(new Building3D(1, z));
     }
 
-    // 4. Sun Pollen (Representing floating digital cyber particles!)
     const pGeo = new THREE.SphereGeometry(0.08, 6, 6);
     const pMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN, transparent: true, opacity: 0.8 });
     
@@ -396,39 +413,33 @@ class Lamppost3D {
     buildPostMesh() {
         this.group = new THREE.Group();
 
-        // 1. Vertical Post Pole
         const postGeo = new THREE.CylinderGeometry(0.06, 0.08, 4.0, 8);
         const postMat = new THREE.MeshStandardMaterial({ color: 0x222227, metalness: 0.9, roughness: 0.2 });
         this.post = new THREE.Mesh(postGeo, postMat);
         this.post.position.y = 2.0;
         this.group.add(this.post);
 
-        // 2. Horizontal Arm reaching toward road
         const armGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8);
         this.arm = new THREE.Mesh(armGeo, postMat);
         this.arm.rotation.z = Math.PI / 2;
-        // Reach inward
         this.arm.position.set(this.side * 0.6, 4.0, 0);
         this.group.add(this.arm);
 
-        // 3. Glowing neon lamp head bulb
         const bulbGeo = new THREE.SphereGeometry(0.18, 12, 12);
         
-        // Colors cycle level colors: Level 1 (Cyan), Level 2 (Pink), Level 3 (Purple)
         const colors = [COLOR_CYAN, COLOR_PINK, COLOR_PURPLE];
         const lampColor = colors[(currentLevel - 1) % colors.length];
 
         const bulbMat = new THREE.MeshStandardMaterial({
             color: lampColor,
             emissive: lampColor,
-            emissiveIntensity: 2.2 // Extreme neon emissive
+            emissiveIntensity: 2.2
         });
         this.bulb = new THREE.Mesh(bulbGeo, bulbMat);
         this.bulb.position.set(this.side * 1.2, 3.82, 0);
         this.group.add(this.bulb);
 
-        // Spawn position
-        this.x = this.side * 5.1; // Exactly flanking path boundary
+        this.x = this.side * 5.1; 
         this.group.position.set(this.x, 0, this.z);
         scene.add(this.group);
     }
@@ -660,7 +671,7 @@ class Bird3D {
         this.group = new THREE.Group();
 
         const bodyGeo = new THREE.ConeGeometry(0.2, 0.7, 6);
-        bodyGeo.rotateX(Math.PI / 2); // Point forward
+        bodyGeo.rotateX(Math.PI / 2); 
         const bodyMat = new THREE.MeshStandardMaterial({ 
             color: COLOR_CYAN, 
             roughness: 0.5, 
@@ -674,11 +685,11 @@ class Bird3D {
         beakGeo.rotateX(Math.PI / 2);
         const beakMat = new THREE.MeshStandardMaterial({ color: COLOR_GOLD, roughness: 0.1 });
         this.beak = new THREE.Mesh(beakGeo, beakMat);
-        this.beak.position.set(0, 0, 0.45); // in front
+        this.beak.position.set(0, 0, 0.45); 
         this.group.add(this.beak);
 
         const tailGeo = new THREE.BoxGeometry(0.05, 0.01, 0.7);
-        tailGeo.translate(0, 0, -0.35); // offset pivot
+        tailGeo.translate(0, 0, -0.35); 
         const tailMat = new THREE.MeshStandardMaterial({ color: COLOR_PINK, roughness: 0.9 });
         
         this.tailLeft = new THREE.Mesh(tailGeo, tailMat);
@@ -692,7 +703,7 @@ class Bird3D {
         this.group.add(this.tailRight);
 
         const wingGeo = new THREE.BoxGeometry(0.7, 0.02, 0.28);
-        wingGeo.translate(0.35, 0, 0); // shift anchor
+        wingGeo.translate(0.35, 0, 0); 
 
         const wingMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, flatShading: true });
         
@@ -809,7 +820,6 @@ class Player3D {
 
         this.buildSpaceNinjaMesh();
 
-        // 7. Dynamic Drop Shadow circle under player flat on grass (Soya ham bo'lsin!)
         const shadowGeo = new THREE.RingGeometry(0.01, 0.42, 16);
         const shadowMat = new THREE.MeshBasicMaterial({
             color: 0x010201, 
@@ -951,6 +961,8 @@ class Player3D {
             this.vy = this.jumpForce * 0.85;
             this.isDoubleJumping = true;
             
+            showAlert("JETPACK REAKTIV KUCHI!", "cyan");
+
             for (let i = 0; i < 22; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = Math.random() * 14 + 6;
@@ -1280,65 +1292,8 @@ function checkFruitCollision(p, f) {
     return dist < 1.15; 
 }
 
-// --- VISUAL DAY-NIGHT PITCH-BLACK CYCLES TRANSITION (Svetlar o'chirilgan!) ---
+// Visual color theme baseline configuration (Svetlar baseline)
 function transitionLevelTheme(level) {
-    if (!scene) return;
-
-    // Pitch-black night visual filters (Svetni o'chirish/Qorong'i shahar)
-    if (level === 1) {
-        // Level 1: Cyber Cyan Night
-        scene.background.setHex(0x010103); // Pitch black
-        scene.fog.color.setHex(0x030206); // Dark violet fog
-        scene.fog.density = 0.009;
-        
-        if (ambientLight) ambientLight.color.setHex(0x090a12); // extremely dim
-        if (sunLight) sunLight.color.setHex(COLOR_CYAN);
-        if (massiveFloor) massiveFloor.material.color.setHex(0x030306);
-    } 
-    
-    else if (level === 2) {
-        // Level 2: Twilight Sunset / Kechqurun (Svetlar o'chiq!)
-        scene.background.setHex(0x040102); // Deep night red
-        scene.fog.color.setHex(0x070204);
-        scene.fog.density = 0.009;
-
-        if (ambientLight) ambientLight.color.setHex(0x0c0608);
-        if (sunLight) sunLight.color.setHex(COLOR_PINK);
-        if (massiveFloor) massiveFloor.material.color.setHex(0x050203);
-    } 
-    
-    else {
-        // Level 3: Deep Cyber Matrix Night
-        scene.background.setHex(0x000000); // Complete space black
-        scene.fog.color.setHex(0x010302); // Deep dark emerald green fog
-        scene.fog.density = 0.0095;
-
-        if (ambientLight) ambientLight.color.setHex(0x020804);
-        if (sunLight) sunLight.color.setHex(COLOR_GREEN);
-        if (massiveFloor) massiveFloor.material.color.setHex(0x010302);
-    }
-
-    // Dynamic Skyscraper neon corner bars recolor based on theme
-    const colors = [COLOR_CYAN, COLOR_PINK, COLOR_GREEN, COLOR_PURPLE];
-    const levelColor = colors[(level - 1) % colors.length];
-
-    buildings.forEach(b => {
-        if (b.stripe1 && b.stripe2) {
-            b.stripe1.material.color.setHex(levelColor);
-            b.stripe1.material.emissive.setHex(levelColor);
-            b.stripe2.material.color.setHex(levelColor);
-            b.stripe2.material.emissive.setHex(levelColor);
-        }
-    });
-
-    // Refresh Lampposts bulb neon colors to match theme
-    lampposts.forEach(lp => {
-        if (lp.bulb) {
-            lp.bulb.material.color.setHex(levelColor);
-            lp.bulb.material.emissive.setHex(levelColor);
-        }
-    });
-
     hudLevel.textContent = level;
 }
 
@@ -1399,7 +1354,7 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
-// Upgraded 4 mobile touchscreen click/touch bindings
+// Touch controls
 mobileLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); steerLeft(); });
 mobileRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); steerRight(); });
 mobileJumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
@@ -1429,7 +1384,7 @@ function init() {
     score = 0;
     coinsCollected = 0;
     distanceRun = 0;
-    gameSpeed = 38 + (currentLevel - 1) * 8; // escalate starting speed per level!
+    gameSpeed = 38 + (currentLevel - 1) * 8; 
     
     obstacleTimer = 0;
     coinGroupTimer = 0;
@@ -1457,7 +1412,6 @@ function init() {
     hudLevel.textContent = currentLevel;
     comboText.textContent = '1.0x';
 
-    // Set level environment colors
     transitionLevelTheme(currentLevel);
 }
 
@@ -1469,13 +1423,16 @@ function startGame() {
     gameOverScreen.classList.add('hidden');
     victoryScreen.classList.add('hidden');
     hud.classList.remove('hidden');
+
+    // Notification: Game starts!
+    showAlert("BOSHLADIK! NEON SHAHAR CHAQIRIQLARI!", "green");
 }
 
-// Victory Level Completed flow (Final!)
 function triggerLevelVictory() {
     gameState = 'VICTORY';
     
-    // Spawn massive multi-color celebration fireworks!
+    showAlert("LEVEL YAKUNLANDI! G'ALABA!", "gold");
+
     const colors = [COLOR_GREEN, COLOR_CYAN, COLOR_PINK, COLOR_GOLD];
     for (let f = 0; f < 6; f++) {
         setTimeout(() => {
@@ -1504,7 +1461,6 @@ function triggerLevelVictory() {
     victoryCoinsEl.textContent = coinsCollected;
     victoryScoreEl.textContent = Math.floor(score);
 
-    // Fade to victory screen
     setTimeout(() => {
         victoryScreen.classList.remove('hidden');
     }, 1800);
@@ -1519,6 +1475,8 @@ function gameOver() {
     gameState = 'GAMEOVER';
     cameraShake = 1.9;
     
+    showAlert("TIZIM CRASH BO'LDI!", "pink");
+
     spawnSparks3D(player.group.position.x, player.group.position.y + 0.8, player.group.position.z, COLOR_RED);
     
     if (navigator.vibrate) {
@@ -1539,8 +1497,6 @@ function gameOver() {
     }
     
     bestScoreEl.textContent = highScore;
-    
-    // Reset back to level 1 for complete restart
     currentLevel = 1;
 
     setTimeout(() => {
@@ -1561,14 +1517,63 @@ function tick() {
     const time = clock.getElapsedTime();
 
     if (gameState === 'PLAYING') {
+        // --- REAL-TIME DYNAMIC DAY-NIGHT CYCLE (Tun va yorug' bo'lsin!) ---
+        // Generates a smooth sine wave cycling every 50 seconds from 0 (Deep Cyber Night) to 1 (Bright Day)
+        const cycleFactor = 0.5 + 0.5 * Math.sin(time * 0.125); 
+
+        // 1. Interpolate Sky Background Color
+        const nightSky = new THREE.Color(0x010103);
+        const daySky = new THREE.Color(COLOR_SKY_BLUE);
+        const currentSky = nightSky.clone().lerp(daySky, cycleFactor);
+        scene.background.copy(currentSky);
+
+        // 2. Interpolate Fog Color
+        const nightFog = new THREE.Color(0x030107);
+        const dayFog = new THREE.Color(COLOR_SUN_MIST);
+        const currentFog = nightFog.clone().lerp(dayFog, cycleFactor);
+        scene.fog.color.copy(currentFog);
+        scene.fog.density = 0.009 - 0.002 * cycleFactor;
+
+        // 3. Interpolate Ground Asphalt grid color (Grid becomes green maysazor during day!)
+        const nightGrass = new THREE.Color(0x020204);
+        const dayGrass = new THREE.Color(0x143c1a);
+        if (massiveFloor) {
+            massiveFloor.material.color.copy(nightGrass.clone().lerp(dayGrass, cycleFactor));
+        }
+
+        // 4. Interpolate Ambient & Sun Light intensities (Yorug' va qorong'i!)
+        if (ambientLight) {
+            ambientLight.intensity = 0.06 + 0.74 * cycleFactor;
+            const nightAmb = new THREE.Color(0x090a12);
+            const dayAmb = new THREE.Color(0xeef6ff);
+            ambientLight.color.copy(nightAmb.clone().lerp(dayAmb, cycleFactor));
+        }
+        if (sunLight) {
+            sunLight.intensity = 0.1 + 1.2 * cycleFactor;
+        }
+
+        // --- DYNAMIC SCENE ELEMENT ACTIONS ---
+
         // 1. Scroll neon highway backward
         if (groundPath) {
             groundPath.material.map.offset.y -= gameSpeed * 0.00045 * (dt / 0.016);
         }
 
-        // 2. Parallax skyscrapers canyon loop (O'rmon o'rniga shahar!)
+        // 2. Parallax skyscrapers canyon loop
         buildings.forEach(b => {
             b.update(dt);
+            
+            // Dynamically adjust building neon striping colors based on current day-night factor
+            const levelColors = [COLOR_CYAN, COLOR_PINK, COLOR_GREEN, COLOR_PURPLE];
+            const baseColor = new THREE.Color(levelColors[(currentLevel - 1) % levelColors.length]);
+            
+            // Fades in emissive brightness during night cycles!
+            const emissiveMult = 1.5 * (1 - cycleFactor);
+            if (b.stripe1 && b.stripe2) {
+                b.stripe1.material.emissiveIntensity = emissiveMult;
+                b.stripe2.material.emissiveIntensity = emissiveMult;
+            }
+
             if (b.z > 25) {
                 b.z = -450 - Math.random() * 50;
                 b.group.position.z = b.z;
@@ -1577,9 +1582,12 @@ function tick() {
             }
         });
 
-        // 3. Parallax neon lampposts loop (Yonboshda neon svetlar!)
+        // 3. Parallax neon lampposts loop (Fades bulb emissive during day!)
         lampposts.forEach(lp => {
             lp.update(dt);
+            if (lp.bulb) {
+                lp.bulb.material.emissiveIntensity = 2.2 * (1 - cycleFactor);
+            }
             if (lp.z > 25) {
                 lp.z = -450;
                 lp.group.position.z = -450;
@@ -1589,7 +1597,6 @@ function tick() {
         // 4. Parallax drifting Clouds loop
         clouds.forEach(c => {
             c.mesh.position.z += gameSpeed * 0.42 * dt * c.speed;
-            
             if (c.mesh.position.z > 40) {
                 c.mesh.position.z = -450 - Math.random() * 80;
                 c.mesh.position.x = (Math.random() - 0.5) * 70;
@@ -1660,6 +1667,11 @@ function tick() {
                 
                 score += 50; 
                 
+                // Show notification milestone for collecting coins
+                if (coinsCollected % 10 === 0) {
+                    showAlert(`TANGALAR YIG'ILDI! +${coinsCollected * 50} BALL!`, "gold");
+                }
+                
                 for (let k = 0; k < 8; k++) {
                     particles.push(new Particle3D(
                         c.group.position.x,
@@ -1700,6 +1712,8 @@ function tick() {
                 f.collected = true;
                 score += 150; 
                 
+                showAlert("BONUS CHERRY MEVA! +150 BALL!", "pink");
+
                 for (let k = 0; k < 12; k++) {
                     particles.push(new Particle3D(
                         f.group.position.x,
@@ -1748,6 +1762,7 @@ function tick() {
                 const combo = (1 + (gameSpeed - 38) * 0.03).toFixed(1);
                 comboText.textContent = combo + 'x';
 
+                showAlert("DODGED! COMBO OSHDI! +180 BALL!", "cyan");
                 spawnSparks3D(o.group.position.x, player.group.position.y + 0.5, o.z, COLOR_GOLD);
             }
 
@@ -1760,6 +1775,7 @@ function tick() {
         // 16. Spawn Finish Victory Gate when distance limit reached! (Final!)
         if (distanceRun >= LEVEL_DISTANCE_GOAL && !victoryGate) {
             victoryGate = new VictoryGate3D(-280);
+            showAlert("DIQQAT! FINISH GATE SPAWN BO'LDI! TEZROQ!", "gold");
         }
 
         // 17. Update and trigger Victory Gate collision
