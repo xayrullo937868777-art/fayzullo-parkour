@@ -1,12 +1,10 @@
 /**
- * Cyber Parkour - Core Game Engine
- * Sleek, neon cyberpunk theme. Mobile-optimized.
+ * Cyber Parkour 3D - Breathtaking 3D WebGL Game Engine
+ * Powered by Three.js. Fully responsive, mobile friendly.
  */
 
+// --- DYNAMIC ELEMENT REFERENCES ---
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-// UI Elements
 const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const hud = document.getElementById('hud');
@@ -17,63 +15,550 @@ const bestScoreEl = document.getElementById('bestScore');
 const newRecordTag = document.getElementById('newRecordTag');
 const comboText = document.getElementById('comboText');
 
-// Buttons
+// Buttons & Touch
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const mobileSlideBtn = document.getElementById('mobileSlideBtn');
 const mobileJumpBtn = document.getElementById('mobileJumpBtn');
 
-// Logical coordinates (Virtual Resolution)
-const V_WIDTH = 1200;
-const V_HEIGHT = 675;
+// --- THREE.JS SCENE SETUP ---
+let scene, camera, renderer;
+let clock = new THREE.Clock();
 
-// Game State
+// Game Parameters
 let gameState = 'START'; // START, PLAYING, GAMEOVER
 let score = 0;
-let highScore = parseInt(localStorage.getItem('cyber_parkour_highscore')) || 0;
-let gameSpeed = 8;
-const MAX_SPEED = 18;
-let distance = 0;
+let highScore = parseInt(localStorage.getItem('cyber_parkour_3d_highscore')) || 0;
+let gameSpeed = 35; // Speed along Z axis
+const MAX_SPEED = 75;
+let distanceRun = 0;
 let obstacleTimer = 0;
-let nextObstacleTime = 80;
-let screenShake = 0;
+let nextObstacleTime = 1.8; // Spawning delay in seconds
+let cameraShake = 0;
 
 // Entities
 let player;
 let obstacles = [];
-let backgrounds = [];
+let buildings = [];
 let particles = [];
+let groundGrid;
 
-// High score init
+// Color Palette
+const COLOR_CYAN = 0x00f0ff;
+const COLOR_PINK = 0xff007f;
+const COLOR_PURPLE = 0x8b00ff;
+const COLOR_GOLD = 0xffbe0b;
+const COLOR_RED = 0xff3333;
+const COLOR_DARK_BLUE = 0x07080d;
+
 highScoreEl.textContent = String(highScore).padStart(5, '0');
 
-// Dynamic Canvas Scaling
-function resizeCanvas() {
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    
-    // Scale factor to preserve aspect ratio
-    const scaleX = windowWidth / V_WIDTH;
-    const scaleY = windowHeight / V_HEIGHT;
-    const scale = Math.min(scaleX, scaleY);
-    
-    canvas.width = V_WIDTH * scale;
-    canvas.height = V_HEIGHT * scale;
-    
-    // Set scale context for logical drawing coordinates
-    ctx.scale(scale, scale);
-    
-    // Ensure smooth rendering
-    ctx.imageSmoothingEnabled = true;
+function initThree() {
+    // 1. Create Scene & Ambient Fog for depth
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x040509);
+    scene.fog = new THREE.FogExp2(0x040509, 0.012);
+
+    // 2. Setup Chase Camera
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // Chase camera position (behind and above player)
+    camera.position.set(0, 4.5, 9.5);
+    camera.lookAt(0, 1.5, 0);
+
+    // 3. WebGL Renderer
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+
+    // 4. Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+    scene.add(ambientLight);
+
+    // Dynamic neon directional lights for cyber shadows
+    const cyanLight = new THREE.DirectionalLight(COLOR_CYAN, 1.2);
+    cyanLight.position.set(-10, 20, 10);
+    scene.add(cyanLight);
+
+    const pinkLight = new THREE.DirectionalLight(COLOR_PINK, 1.0);
+    pinkLight.position.set(10, 15, -10);
+    scene.add(pinkLight);
+
+    // 5. Build Procedural Neon Ground Grid
+    createCyberGround();
+
+    // 6. Build City Skyscrapers
+    createSkyscrapers();
+
+    // 7. Instantiate 3D Player
+    player = new Player3D();
 }
 
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('load', resizeCanvas);
-resizeCanvas();
+// Procedural texture generation for cyberpunk grid floor
+function createCyberGround() {
+    const width = 60;
+    const length = 500;
+    
+    // Draw high-quality grid pattern on in-memory canvas
+    const gridCanvas = document.createElement('canvas');
+    gridCanvas.width = 128;
+    gridCanvas.height = 128;
+    const gctx = gridCanvas.getContext('2d');
+    
+    gctx.fillStyle = '#06070b';
+    gctx.fillRect(0, 0, 128, 128);
+    
+    // Glowing grid lines
+    gctx.strokeStyle = '#00f0ff';
+    gctx.lineWidth = 4;
+    gctx.strokeRect(0, 0, 128, 128);
+    
+    const gridTexture = new THREE.CanvasTexture(gridCanvas);
+    gridTexture.wrapS = THREE.RepeatWrapping;
+    gridTexture.wrapT = THREE.RepeatWrapping;
+    gridTexture.repeat.set(width / 3, length / 3);
 
-// --- INPUT HANDLERS ---
-const keys = {};
+    const groundGeo = new THREE.PlaneGeometry(width, length);
+    const groundMat = new THREE.MeshStandardMaterial({
+        map: gridTexture,
+        roughness: 0.1,
+        metalness: 0.8,
+        emissive: 0x002244,
+        emissiveIntensity: 0.3
+    });
 
+    groundGrid = new THREE.Mesh(groundGeo, groundMat);
+    groundGrid.rotation.x = -Math.PI / 2;
+    groundGrid.position.set(0, 0, -length / 3);
+    scene.add(groundGrid);
+
+    // Glowing border rails (cyan neon lines flanking the runway)
+    const railGeoLeft = new THREE.CylinderGeometry(0.1, 0.1, length, 8);
+    const railMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
+    
+    const railLeft = new THREE.Mesh(railGeoLeft, railMat);
+    railLeft.rotation.x = Math.PI / 2;
+    railLeft.position.set(-6, 0.05, -length / 2);
+    scene.add(railLeft);
+
+    const railRight = railLeft.clone();
+    railRight.position.x = 6;
+    scene.add(railRight);
+}
+
+// Dynamic City Grid Generator
+function createSkyscrapers() {
+    const skyGeo = new THREE.BoxGeometry(1, 1, 1);
+    
+    // Create random skyscrapers along both sides of the cyber road
+    for (let i = 0; i < 28; i++) {
+        const height = 40 + Math.random() * 80;
+        const width = 12 + Math.random() * 15;
+        const depth = 12 + Math.random() * 15;
+        
+        // Dark metallic building material with random neon glowing stripes
+        const isPink = Math.random() < 0.5;
+        const emissiveColor = isPink ? COLOR_PINK : COLOR_PURPLE;
+        
+        const bMat = new THREE.MeshStandardMaterial({
+            color: 0x090a12,
+            roughness: 0.2,
+            metalness: 0.9,
+            emissive: emissiveColor,
+            emissiveIntensity: 0.15 + Math.random() * 0.25,
+            flatShading: true
+        });
+
+        const building = new THREE.Mesh(skyGeo, bMat);
+        building.scale.set(width, height, depth);
+        
+        // Flank on left or right sides of runway
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const xPos = side * (18 + Math.random() * 40);
+        const zPos = -Math.random() * 450 - 50;
+        
+        building.position.set(xPos, height / 2 - 0.5, zPos);
+        scene.add(building);
+        
+        buildings.push({
+            mesh: building,
+            height: height,
+            side: side,
+            originalX: xPos
+        });
+    }
+}
+
+// --- 3D PARTICLE CLASS ---
+class Particle3D {
+    constructor(x, y, z, vx, vy, vz, color, size, life) {
+        const pGeo = new THREE.BoxGeometry(size, size, size);
+        const pMat = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true
+        });
+        
+        this.mesh = new THREE.Mesh(pGeo, pMat);
+        this.mesh.position.set(x, y, z);
+        scene.add(this.mesh);
+        
+        this.vx = vx;
+        this.vy = vy;
+        this.vz = vz;
+        this.life = life;
+        this.maxLife = life;
+    }
+
+    update(dt) {
+        this.mesh.position.x += this.vx * dt;
+        this.mesh.position.y += this.vy * dt;
+        this.mesh.position.z += this.vz * dt;
+        
+        this.life -= dt;
+        
+        // Shrink and fade
+        const scaleVal = Math.max(0.01, this.life / this.maxLife);
+        this.mesh.scale.set(scaleVal, scaleVal, scaleVal);
+        this.mesh.material.opacity = scaleVal;
+    }
+
+    destroy() {
+        scene.remove(this.mesh);
+        this.mesh.geometry.dispose();
+        this.mesh.material.dispose();
+    }
+}
+
+function spawnSparks3D(x, y, z, color) {
+    for (let i = 0; i < 12; i++) {
+        const vx = (Math.random() - 0.5) * 12;
+        const vy = Math.random() * 15 + 2;
+        const vz = gameSpeed * 0.3 + (Math.random() - 0.5) * 15;
+        const size = 0.15 + Math.random() * 0.15;
+        const life = 0.4 + Math.random() * 0.4;
+        
+        particles.push(new Particle3D(x, y, z, vx, vy, vz, color, size, life));
+    }
+}
+
+// --- 3D PLAYER CLASS ---
+class Player3D {
+    constructor() {
+        this.group = new THREE.Group();
+        scene.add(this.group);
+
+        // State Machine
+        this.y = 0.1;
+        this.vy = 0;
+        this.gravity = -52; // Strong 3D gravity
+        this.jumpForce = 21;
+        this.isJumping = false;
+        this.isDoubleJumping = false;
+        this.isSliding = false;
+        this.slideTimer = 0;
+        this.animTime = 0;
+
+        // Visual hitbox properties
+        this.width = 1.0;
+        this.height = 1.6;
+        this.depth = 1.0;
+
+        this.buildRobotMesh();
+    }
+
+    buildRobotMesh() {
+        // Materials
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.8 });
+        const cyberMat = new THREE.MeshStandardMaterial({ color: COLOR_CYAN, emissive: COLOR_CYAN, emissiveIntensity: 0.6 });
+        const neonPinkMat = new THREE.MeshStandardMaterial({ color: COLOR_PINK, emissive: COLOR_PINK, emissiveIntensity: 0.8 });
+        
+        // 1. Torso Capsule
+        const torsoGeo = new THREE.BoxGeometry(0.8, 0.9, 0.5);
+        this.torso = new THREE.Mesh(torsoGeo, skinMat);
+        this.torso.position.y = 1.0;
+        this.group.add(this.torso);
+
+        // Core chest light
+        const coreGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.1, 8);
+        this.chestCore = new THREE.Mesh(coreGeo, cyberMat);
+        this.chestCore.rotation.x = Math.PI / 2;
+        this.chestCore.position.set(0, 1.1, 0.26);
+        this.group.add(this.chestCore);
+
+        // 2. Head
+        const headGeo = new THREE.BoxGeometry(0.44, 0.44, 0.44);
+        this.head = new THREE.Mesh(headGeo, skinMat);
+        this.head.position.y = 1.65;
+        this.group.add(this.head);
+
+        // Glowing visor (pink eye plate)
+        const visorGeo = new THREE.BoxGeometry(0.48, 0.12, 0.15);
+        this.visor = new THREE.Mesh(visorGeo, neonPinkMat);
+        this.visor.position.set(0, 1.7, 0.18);
+        this.group.add(this.visor);
+
+        // 3. Articulated Limbs
+        const limbGeo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
+        
+        // Left Arm
+        this.leftArm = new THREE.Mesh(limbGeo, cyberMat);
+        this.leftArm.position.set(-0.55, 1.0, 0);
+        this.group.add(this.leftArm);
+
+        // Right Arm
+        this.rightArm = new THREE.Mesh(limbGeo, cyberMat);
+        this.rightArm.position.set(0.55, 1.0, 0);
+        this.group.add(this.rightArm);
+
+        // Left Leg
+        this.leftLeg = new THREE.Mesh(limbGeo, skinMat);
+        this.leftLeg.position.set(-0.25, 0.35, 0);
+        this.group.add(this.leftLeg);
+
+        // Right Leg
+        this.rightLeg = new THREE.Mesh(limbGeo, skinMat);
+        this.rightLeg.position.set(0.25, 0.35, 0);
+        this.group.add(this.rightLeg);
+    }
+
+    jump() {
+        if (!this.isJumping) {
+            this.vy = this.jumpForce;
+            this.isJumping = true;
+            this.isSliding = false;
+            spawnSparks3D(this.group.position.x, this.y, this.group.position.z, COLOR_CYAN);
+        } else if (!this.isDoubleJumping) {
+            this.vy = this.jumpForce * 0.85;
+            this.isDoubleJumping = true;
+            
+            // Neon radial shockwave
+            for (let i = 0; i < 20; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 12 + 6;
+                const vx = Math.cos(angle) * speed;
+                const vz = Math.sin(angle) * speed;
+                particles.push(new Particle3D(
+                    this.group.position.x,
+                    this.group.position.y + 0.8,
+                    this.group.position.z,
+                    vx, 0, vz,
+                    COLOR_PINK, 0.15, 0.5
+                ));
+            }
+        }
+    }
+
+    slide(active) {
+        if (active) {
+            if (!this.isJumping) {
+                this.isSliding = true;
+                this.height = 0.75; // Lower 3D collision hitbox
+                
+                // Animate torso horizontally
+                this.group.rotation.x = -Math.PI / 2.5;
+                this.group.position.y = 0.3;
+            }
+        } else {
+            this.isSliding = false;
+            this.height = 1.6; // Restore tall hitbox
+            this.group.rotation.x = 0;
+            this.group.position.y = this.y;
+        }
+    }
+
+    update(dt) {
+        // Physics update
+        this.vy += this.gravity * dt;
+        this.y += this.vy * dt;
+
+        // Ground constraint
+        if (this.y <= 0.1) {
+            this.y = 0.1;
+            this.vy = 0;
+            this.isJumping = false;
+            this.isDoubleJumping = false;
+        }
+
+        // Apply visual positions unless sliding overrides
+        if (!this.isSliding) {
+            this.group.position.y = this.y;
+        }
+
+        // Running Anim Loop
+        this.animTime += dt * gameSpeed * 0.35;
+        
+        if (this.isSliding) {
+            // Sliding sparks
+            if (Math.random() < 0.3) {
+                particles.push(new Particle3D(
+                    this.group.position.x + (Math.random() - 0.5) * 0.4,
+                    0.05,
+                    this.group.position.z + 0.3,
+                    (Math.random() - 0.5) * 5,
+                    Math.random() * 3,
+                    gameSpeed * 0.4,
+                    COLOR_PINK, 0.1, 0.3
+                ));
+            }
+        } else if (this.isJumping) {
+            // Legs folded in during jump
+            this.leftLeg.rotation.x = -0.6;
+            this.rightLeg.rotation.x = -0.6;
+            this.leftArm.rotation.x = 0.6;
+            this.rightArm.rotation.x = 0.6;
+        } else {
+            // Normal high-tech running swing animations
+            const swing = Math.sin(this.animTime);
+            this.leftLeg.rotation.x = swing * 0.8;
+            this.rightLeg.rotation.x = -swing * 0.8;
+            this.leftArm.rotation.x = -swing * 0.8;
+            this.rightArm.rotation.x = swing * 0.8;
+
+            // Subtle body bounce
+            this.torso.position.y = 1.0 + Math.abs(swing) * 0.08;
+            this.head.position.y = 1.65 + Math.abs(swing) * 0.06;
+        }
+    }
+}
+
+// --- 3D OBSTACLE CLASS ---
+class Obstacle3D {
+    constructor() {
+        this.z = -280; // Spawn far in the distance
+        
+        // 0: LOW spiked glowing block (jump)
+        // 1: HIGH suspended horizontal laser gate (slide)
+        // 2: TALL massive wireframe blocks (double jump)
+        this.type = Math.floor(Math.random() * 3);
+        
+        this.dodged = false;
+
+        this.buildObstacleMesh();
+    }
+
+    buildObstacleMesh() {
+        this.group = new THREE.Group();
+        
+        if (this.type === 0) {
+            // Low spiked cyber cube
+            this.width = 1.6;
+            this.height = 0.75;
+            this.depth = 1.4;
+            
+            const boxGeo = new THREE.BoxGeometry(this.width, this.height, this.depth);
+            const boxMat = new THREE.MeshStandardMaterial({
+                color: 0x11020c,
+                roughness: 0.1,
+                metalness: 0.9,
+                emissive: COLOR_PINK,
+                emissiveIntensity: 0.9
+            });
+            const mesh = new THREE.Mesh(boxGeo, boxMat);
+            mesh.position.y = this.height / 2;
+            this.group.add(mesh);
+        } 
+        
+        else if (this.type === 1) {
+            // Suspended neon laser gate
+            this.width = 10;
+            this.height = 0.4;
+            this.depth = 0.4;
+            
+            // Horizontal cylinder glowing beam
+            const cylinderGeo = new THREE.CylinderGeometry(0.18, 0.18, this.width, 8);
+            const laserMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
+            const laserMesh = new THREE.Mesh(cylinderGeo, laserMat);
+            laserMesh.rotation.z = Math.PI / 2;
+            laserMesh.position.y = 2.1; // Float high
+            this.group.add(laserMesh);
+
+            // Left side neon pole
+            const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 4, 8);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x111115, metalness: 0.9 });
+            const pLeft = new THREE.Mesh(poleGeo, poleMat);
+            pLeft.position.set(-this.width / 2, 2.0, 0);
+            this.group.add(pLeft);
+
+            const pRight = pLeft.clone();
+            pRight.position.x = this.width / 2;
+            this.group.add(pRight);
+
+            // Adjust hitbox variables
+            this.yMin = 1.95; 
+            this.yMax = 2.25;
+        } 
+        
+        else {
+            // Tall neon electric gate
+            this.width = 2.2;
+            this.height = 1.95;
+            this.depth = 1.2;
+
+            const tallGeo = new THREE.BoxGeometry(this.width, this.height, this.depth);
+            const tallMat = new THREE.MeshStandardMaterial({
+                color: 0x05010b,
+                roughness: 0.2,
+                metalness: 0.9,
+                emissive: COLOR_PURPLE,
+                emissiveIntensity: 1.2,
+                wireframe: true
+            });
+            const mesh = new THREE.Mesh(tallGeo, tallMat);
+            mesh.position.y = this.height / 2;
+            this.group.add(mesh);
+        }
+
+        // Place on the center of the road
+        this.group.position.set(0, 0, this.z);
+        scene.add(this.group);
+    }
+
+    update(dt) {
+        this.z += gameSpeed * dt;
+        this.group.position.z = this.z;
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        // Recursively dispose geometries and materials
+        this.group.traverse(node => {
+            if (node.isMesh) {
+                node.geometry.dispose();
+                node.material.dispose();
+            }
+        });
+    }
+}
+
+// --- COLLISION DETECTION IN 3D ---
+function checkCollision3D(p, o) {
+    const pZ = p.group.position.z;
+    const pX = p.group.position.x;
+    
+    // Check if obstacle is aligned in Z-axis range of runner
+    const halfD = o.depth / 2;
+    if (Math.abs(o.z - pZ) > halfD + 0.3) {
+        return false;
+    }
+
+    // Checking collision along X and Y axes
+    if (o.type === 0) {
+        // Low hurdle: overlap player y height bounds
+        return (p.y < o.height);
+    } 
+    
+    else if (o.type === 1) {
+        // High laser: collision if player is NOT sliding
+        return (!p.isSliding);
+    } 
+    
+    else {
+        // Tall wall: overlap player y height bounds
+        return (p.y + p.height > 0.1 && p.y < o.height);
+    }
+}
+
+// --- DYNAMIC INPUT EVENTS ---
 function triggerJump() {
     if (gameState === 'PLAYING') {
         player.jump();
@@ -92,9 +577,8 @@ function stopSlide() {
     }
 }
 
-// Keyboard Listeners
+// Desktop Listeners
 window.addEventListener('keydown', (e) => {
-    keys[e.code] = true;
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         e.preventDefault();
         triggerJump();
@@ -106,694 +590,72 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
-    keys[e.code] = false;
     if (e.code === 'ArrowDown' || e.code === 'KeyS') {
         stopSlide();
     }
 });
 
-// Mobile Controls (Touch)
-mobileJumpBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    triggerJump();
-});
+// Touch buttons
+mobileJumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
+mobileSlideBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startSlide(); });
+mobileSlideBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopSlide(); });
 
-mobileSlideBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    startSlide();
-});
+// Mouse emulation for desktop testing
+mobileJumpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); triggerJump(); });
+mobileSlideBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startSlide(); });
+window.addEventListener('mouseup', () => { stopSlide(); });
 
-mobileSlideBtn.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    stopSlide();
-});
-
-// Click support (for web emulator testing if touch is unavailable)
-mobileJumpBtn.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    triggerJump();
-});
-mobileSlideBtn.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    startSlide();
-});
-window.addEventListener('mouseup', () => {
-    stopSlide();
-});
-
-// --- PARTICLE SYSTEM ---
-class Particle {
-    constructor(x, y, vx, vy, color, size, life) {
-        this.x = x;
-        this.y = y;
-        this.vx = vx;
-        this.vy = vy;
-        this.color = color;
-        this.size = size;
-        this.life = life;
-        this.maxLife = life;
-    }
-
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life--;
-    }
-
-    draw() {
-        ctx.save();
-        ctx.globalAlpha = this.life / this.maxLife;
-        ctx.fillStyle = this.color;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
-}
-
-function spawnSparks(x, y, color) {
-    for (let i = 0; i < 8; i++) {
-        const vx = -gameSpeed + (Math.random() - 0.5) * 8;
-        const vy = (Math.random() - 0.5) * 10 - 2;
-        const size = Math.random() * 3 + 2;
-        const life = Math.random() * 20 + 15;
-        particles.push(new Particle(x, y, vx, vy, color, size, life));
-    }
-}
-
-// --- PLAYER CLASS ---
-class Player {
-    constructor() {
-        this.x = 150;
-        this.groundY = V_HEIGHT - 120;
-        this.width = 50;
-        this.height = 80;
-        this.y = this.groundY - this.height;
-        this.vy = 0;
-        this.gravity = 1.0;
-        this.jumpForce = -20;
-        this.isJumping = false;
-        this.isDoubleJumping = false;
-        this.isSliding = false;
-        this.slideTimer = 0;
-        this.animFrame = 0;
-        this.colorCyan = '#00f0ff';
-        this.colorPink = '#ff007f';
-        this.colorPurple = '#8b00ff';
-    }
-
-    jump() {
-        if (!this.isJumping) {
-            this.vy = this.jumpForce;
-            this.isJumping = true;
-            this.isSliding = false;
-            // Jump sparks
-            spawnSparks(this.x + this.width / 2, this.y + this.height, this.colorCyan);
-        } else if (!this.isDoubleJumping) {
-            this.vy = this.jumpForce * 0.85;
-            this.isDoubleJumping = true;
-            // Double jump ring effect
-            for (let i = 0; i < 15; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 6 + 4;
-                const vx = Math.cos(angle) * speed - gameSpeed;
-                const vy = Math.sin(angle) * speed;
-                particles.push(new Particle(
-                    this.x + this.width / 2,
-                    this.y + this.height / 2,
-                    vx, vy,
-                    this.colorPink,
-                    Math.random() * 2 + 1,
-                    30
-                ));
-            }
-        }
-    }
-
-    slide(active) {
-        if (active) {
-            if (!this.isJumping) {
-                this.isSliding = true;
-                this.height = 45; // lower hitbox height
-            }
-        } else {
-            this.isSliding = false;
-            this.height = 80; // restore hitbox
-        }
-    }
-
-    update() {
-        // Apply Physics
-        this.vy += this.gravity;
-        this.y += this.vy;
-
-        // Ground constraint
-        const currentGroundY = this.groundY - this.height;
-        if (this.y >= currentGroundY) {
-            this.y = currentGroundY;
-            this.vy = 0;
-            this.isJumping = false;
-            this.isDoubleJumping = false;
-        }
-
-        // Slide mechanics & sparks
-        if (this.isSliding && !this.isJumping) {
-            // Spawn neon sparks when sliding
-            if (Math.random() < 0.4) {
-                particles.push(new Particle(
-                    this.x + 10,
-                    this.groundY - 5,
-                    -gameSpeed + (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 3,
-                    this.colorPink,
-                    Math.random() * 2 + 2,
-                    15
-                ));
-            }
-        }
-
-        // Particle trail when running
-        if (!this.isJumping && !this.isSliding && Math.random() < 0.15) {
-            particles.push(new Particle(
-                this.x,
-                this.groundY - 10,
-                -gameSpeed - 2,
-                (Math.random() - 0.5) * 2,
-                'rgba(139, 0, 255, 0.4)',
-                Math.random() * 3 + 2,
-                15
-            ));
-        }
-
-        // Animate running
-        this.animFrame += gameSpeed * 0.05;
-    }
-
-    draw() {
-        ctx.save();
-        ctx.shadowBlur = 15;
-        
-        const px = this.x;
-        const py = this.y;
-        const pw = this.width;
-        const ph = this.height;
-
-        if (this.isSliding) {
-            ctx.shadowColor = this.colorPink;
-            ctx.fillStyle = this.colorPink;
-            
-            // Draw a sliding cyber capsule shape
-            ctx.beginPath();
-            ctx.roundRect(px, py, pw + 10, ph, 15);
-            ctx.fill();
-
-            // Cyber glowing stripes
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(px + 15, py + 12, pw - 10, 4);
-            ctx.fillRect(px + 20, py + 24, pw - 20, 4);
-
-        } else {
-            // Running or jumping
-            ctx.shadowColor = this.colorCyan;
-            
-            // Stylized cyber runner character
-            // Head
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            const headY = py + 12;
-            ctx.arc(px + 25, headY, 10, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Futuristic Visor
-            ctx.fillStyle = this.colorPink;
-            ctx.fillRect(px + 22, headY - 4, 10, 4);
-
-            // Torso
-            ctx.strokeStyle = this.colorCyan;
-            ctx.lineWidth = 6;
-            ctx.lineCap = 'round';
-            
-            const neckX = px + 25;
-            const neckY = headY + 10;
-            const hipX = px + 25;
-            const hipY = py + 55;
-            
-            ctx.beginPath();
-            ctx.moveTo(neckX, neckY);
-            ctx.lineTo(hipX, hipY);
-            ctx.stroke();
-
-            // Legs Animation based on running cycle
-            let leftFootX, leftFootY, rightFootX, rightFootY;
-
-            if (this.isJumping) {
-                // Tucked in legs for jumping
-                leftFootX = px + 15;
-                leftFootY = py + 75;
-                rightFootX = px + 35;
-                rightFootY = py + 75;
-            } else {
-                // Leg swing angle
-                const cycle = Math.sin(this.animFrame);
-                leftFootX = px + 25 + cycle * 20;
-                leftFootY = py + 80;
-                rightFootX = px + 25 - cycle * 20;
-                rightFootY = py + 80;
-            }
-
-            // Draw Legs
-            ctx.strokeStyle = this.colorPurple;
-            ctx.beginPath();
-            ctx.moveTo(hipX, hipY);
-            ctx.lineTo(leftFootX, leftFootY);
-            ctx.moveTo(hipX, hipY);
-            ctx.lineTo(rightFootX, rightFootY);
-            ctx.stroke();
-
-            // Arms Animation
-            let leftHandX, leftHandY, rightHandX, rightHandY;
-
-            if (this.isJumping) {
-                leftHandX = px + 10;
-                leftHandY = py + 15;
-                rightHandX = px + 40;
-                rightHandY = py + 15;
-            } else {
-                const cycle = Math.sin(this.animFrame + Math.PI);
-                leftHandX = px + 25 + cycle * 15;
-                leftHandY = py + 40;
-                rightHandX = px + 25 - cycle * 15;
-                rightHandY = py + 40;
-            }
-
-            // Draw Arms
-            ctx.strokeStyle = this.colorCyan;
-            ctx.beginPath();
-            ctx.moveTo(neckX + 2, neckY + 4);
-            ctx.lineTo(leftHandX, leftHandY);
-            ctx.moveTo(neckX - 2, neckY + 4);
-            ctx.lineTo(rightHandX, rightHandY);
-            ctx.stroke();
-        }
-
-        ctx.restore();
-    }
-}
-
-// --- PARALLAX BACKGROUND ---
-class BackgroundLayer {
-    constructor(imageType, speedFactor, color) {
-        this.imageType = imageType; // 'STARS', 'CITY_FAR', 'CITY_NEAR'
-        this.speedFactor = speedFactor;
-        this.color = color;
-        this.x = 0;
-        this.width = V_WIDTH;
-        
-        // Setup static layout matrices
-        this.buildings = [];
-        if (imageType === 'CITY_FAR') {
-            for (let i = 0; i < 15; i++) {
-                this.buildings.push({
-                    x: i * 100 + Math.random() * 20,
-                    w: 60 + Math.random() * 80,
-                    h: 150 + Math.random() * 200
-                });
-            }
-        } else if (imageType === 'CITY_NEAR') {
-            for (let i = 0; i < 10; i++) {
-                this.buildings.push({
-                    x: i * 150 + Math.random() * 30,
-                    w: 100 + Math.random() * 100,
-                    h: 250 + Math.random() * 220
-                });
-            }
-        }
-    }
-
-    update() {
-        this.x -= gameSpeed * this.speedFactor;
-        if (this.x <= -this.width) {
-            this.x = 0;
-        }
-    }
-
-    draw() {
-        ctx.save();
-        ctx.fillStyle = this.color;
-
-        const drawWidth = V_WIDTH;
-        const currentX = this.x;
-
-        if (this.imageType === 'STARS') {
-            // Draw digital stars
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#ffffff';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            for (let i = 0; i < 40; i++) {
-                const starX = (currentX + (i * 73)) % (V_WIDTH * 2);
-                const starY = (i * 17) % 350;
-                ctx.beginPath();
-                ctx.arc(starX < V_WIDTH ? starX : starX - V_WIDTH, starY, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        } 
-        
-        else if (this.imageType === 'CITY_FAR') {
-            // Distant skyline
-            ctx.globalAlpha = 0.35;
-            for (let offset = 0; offset <= V_WIDTH; offset += V_WIDTH) {
-                this.buildings.forEach(b => {
-                    ctx.fillRect(currentX + b.x + offset, V_HEIGHT - b.h - 100, b.w, b.h);
-                });
-            }
-        } 
-        
-        else if (this.imageType === 'CITY_NEAR') {
-            // Nearer skyline
-            ctx.globalAlpha = 0.55;
-            for (let offset = 0; offset <= V_WIDTH; offset += V_WIDTH) {
-                this.buildings.forEach(b => {
-                    ctx.fillRect(currentX + b.x + offset, V_HEIGHT - b.h - 100, b.w, b.h);
-                    
-                    // Add modern neon window dots
-                    ctx.fillStyle = '#ffbe0b';
-                    ctx.globalAlpha = 0.4;
-                    const winRows = Math.floor(b.h / 40);
-                    const winCols = Math.floor(b.w / 20);
-                    for (let r = 0; r < winRows; r++) {
-                        for (let c = 0; c < winCols; c++) {
-                            if ((r + c) % 3 === 0) {
-                                ctx.fillRect(
-                                    currentX + b.x + offset + 8 + c * 16,
-                                    V_HEIGHT - b.h - 100 + 15 + r * 30,
-                                    4, 6
-                                );
-                            }
-                        }
-                    }
-                    ctx.fillStyle = this.color;
-                    ctx.globalAlpha = 0.55;
-                });
-            }
-        }
-
-        ctx.restore();
-    }
-}
-
-// --- OBSTACLE CLASS ---
-class Obstacle {
-    constructor() {
-        this.x = V_WIDTH + 100;
-        
-        // Randomly select type of parkour obstacle
-        // 0: LOW hurdle (jump over)
-        // 1: HIGH hanging barrier/laser (slide under)
-        // 2: TALL obstacle (double jump)
-        this.type = Math.floor(Math.random() * 3);
-        
-        this.width = 40 + Math.random() * 20;
-        
-        if (this.type === 0) {
-            // Low barrier
-            this.height = 35 + Math.random() * 15;
-            this.y = V_HEIGHT - 100 - this.height;
-            this.color = '#ff007f'; // Neon Pink
-        } else if (this.type === 1) {
-            // Hanging laser beam
-            this.height = 35;
-            this.width = 45;
-            this.y = V_HEIGHT - 100 - 95; // Suspended high
-            this.color = '#00f0ff'; // Neon Cyan
-        } else {
-            // Tall fence
-            this.height = 70 + Math.random() * 15;
-            this.width = 35;
-            this.y = V_HEIGHT - 100 - this.height;
-            this.color = '#8b00ff'; // Neon Purple
-        }
-
-        this.dodged = false;
-    }
-
-    update() {
-        this.x -= gameSpeed;
-    }
-
-    draw() {
-        ctx.save();
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = this.color;
-        ctx.fillStyle = this.color;
-
-        if (this.type === 0) {
-            // Low neon spiked barrier
-            ctx.beginPath();
-            ctx.moveTo(this.x, this.y + this.height);
-            ctx.lineTo(this.x + this.width / 2, this.y);
-            ctx.lineTo(this.x + this.width, this.y + this.height);
-            ctx.closePath();
-            ctx.fill();
-
-            // Glow cap
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(this.x + this.width / 2, this.y, 4, 0, Math.PI * 2);
-            ctx.fill();
-        } 
-        
-        else if (this.type === 1) {
-            // Hanging energy beam
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = this.color;
-            ctx.strokeRect(this.x, this.y, this.width, this.height);
-            
-            // Pulsing center laser
-            ctx.fillStyle = 'rgba(255,255,255, 0.9)';
-            ctx.fillRect(this.x + 4, this.y + this.height / 2 - 2, this.width - 8, 4);
-        } 
-        
-        else {
-            // Tall grid/fence
-            ctx.beginPath();
-            ctx.roundRect(this.x, this.y, this.width, this.height, 6);
-            ctx.fill();
-
-            // Inner glowing vertical strip
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(this.x + this.width / 2 - 2, this.y + 10, 4, this.height - 20);
-        }
-
-        ctx.restore();
-    }
-}
-
-// --- INITIALIZE GAME ---
+// --- GAME STATE FLOWS ---
 function init() {
+    // Clear old entities
+    obstacles.forEach(o => o.destroy());
+    particles.forEach(p => p.destroy());
+    
     score = 0;
-    gameSpeed = 8;
-    distance = 0;
+    gameSpeed = 35;
+    distanceRun = 0;
     obstacleTimer = 0;
-    screenShake = 0;
-    particles = [];
+    cameraShake = 0;
     obstacles = [];
-    backgrounds = [];
-    
-    // Create parallax layers
-    backgrounds.push(new BackgroundLayer('STARS', 0.02, '#ffffff'));
-    backgrounds.push(new BackgroundLayer('CITY_FAR', 0.12, '#0c0618'));
-    backgrounds.push(new BackgroundLayer('CITY_NEAR', 0.28, '#140c26'));
+    particles = [];
 
-    player = new Player();
-    
+    // Reset player position
+    player.y = 0.1;
+    player.vy = 0;
+    player.isJumping = false;
+    player.isDoubleJumping = false;
+    player.slide(false);
+
     currentScoreEl.textContent = '00000';
     comboText.textContent = '1.0x';
 }
 
-// --- COLLISION DETECTION ---
-function checkCollision(p, o) {
-    // Basic rectangle overlapping hitbox
-    // With 5px visual buffer for satisfying gameloop
-    const buffer = 6;
-    return (
-        p.x + buffer < o.x + o.width &&
-        p.x + p.width - buffer > o.x &&
-        p.y + buffer < o.y + o.height &&
-        p.y + p.height - buffer > o.y
-    );
-}
-
-// --- SCREEN SHAKE EFFECT ---
-function shakeScreen() {
-    if (screenShake > 0) {
-        const dx = (Math.random() - 0.5) * screenShake;
-        const dy = (Math.random() - 0.5) * screenShake;
-        ctx.translate(dx, dy);
-        screenShake -= 0.6;
-    }
-}
-
-// --- CORE GAME LOOP ---
-function update() {
-    // Parallax update
-    backgrounds.forEach(bg => bg.update());
-
-    // Update Player
-    player.update();
-
-    // Spawning Logic
-    obstacleTimer++;
-    if (obstacleTimer >= nextObstacleTime) {
-        obstacles.push(new Obstacle());
-        obstacleTimer = 0;
-        // Random time range for next obstacle
-        nextObstacleTime = Math.random() * 50 + 60 - (gameSpeed * 1.5);
-    }
-
-    // Update Obstacles
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        const o = obstacles[i];
-        o.update();
-
-        // Check if player collided
-        if (checkCollision(player, o)) {
-            gameOver();
-            return;
-        }
-
-        // Score when successfully dodged
-        if (o.x + o.width < player.x && !o.dodged) {
-            o.dodged = true;
-            score += 100;
-            
-            // Multiplier effect based on speed
-            const speedCombo = (1 + (gameSpeed - 8) * 0.1).toFixed(1);
-            comboText.textContent = speedCombo + 'x';
-            
-            // Pop score particle
-            spawnSparks(player.x + player.width, player.y + player.height / 2, '#ffbe0b');
-        }
-
-        // Clear offscreen obstacles
-        if (o.x < -100) {
-            obstacles.splice(i, 1);
-        }
-    }
-
-    // Score continuously incrementing
-    distance += 0.2;
-    score += Math.floor(distance * 0.05);
-    distance = distance % 10 === 0 ? distance : distance;
-    
-    currentScoreEl.textContent = String(Math.floor(score)).padStart(5, '0');
-
-    // Increase game speed gradually
-    if (Math.floor(score) % 500 === 0 && gameSpeed < MAX_SPEED) {
-        gameSpeed += 0.2;
-    }
-
-    // Update Particles
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.update();
-        if (p.life <= 0) {
-            particles.splice(i, 1);
-        }
-    }
-}
-
-function draw() {
-    // Reset/clear with cyber space gradient
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, V_HEIGHT);
-    skyGrad.addColorStop(0, '#040509');
-    skyGrad.addColorStop(1, '#0e0b1c');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
-
-    // Apply Screen Shake
-    ctx.save();
-    shakeScreen();
-
-    // Draw Parallax layers
-    backgrounds.forEach(bg => bg.draw());
-
-    // Draw Cyber Ground
-    ctx.save();
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#00f0ff';
-    ctx.fillStyle = '#06070b';
-    ctx.fillRect(0, V_HEIGHT - 100, V_WIDTH, 100);
-
-    // Neon ground horizontal border
-    ctx.fillStyle = '#00f0ff';
-    ctx.fillRect(0, V_HEIGHT - 100, V_WIDTH, 4);
-
-    // Decorative cyber grid lines
-    ctx.strokeStyle = 'rgba(139, 0, 255, 0.25)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < V_WIDTH; i += 80) {
-        ctx.beginPath();
-        ctx.moveTo(i, V_HEIGHT - 100);
-        ctx.lineTo(i - 40, V_HEIGHT);
-        ctx.stroke();
-    }
-    ctx.restore();
-
-    // Draw Obstacles
-    obstacles.forEach(o => o.draw());
-
-    // Draw Player
-    player.draw();
-
-    // Draw Particles
-    particles.forEach(p => p.draw());
-
-    ctx.restore();
-}
-
-function gameLoop() {
-    if (gameState === 'PLAYING') {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-    }
-}
-
-// --- STATE MANAGEMENT FLOWS ---
 function startGame() {
     init();
     gameState = 'PLAYING';
     
-    // Hide UI overlays
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     hud.classList.remove('hidden');
-    
-    // Start canvas loops
-    requestAnimationFrame(gameLoop);
 }
 
 function gameOver() {
     gameState = 'GAMEOVER';
-    screenShake = 18; // Apply solid visual shake
+    cameraShake = 1.8;
     
     // Spawn red sparks representing a system crash
-    spawnSparks(player.x + player.width / 2, player.y + player.height / 2, '#ff3333');
+    spawnSparks3D(player.group.position.x, player.group.position.y + 0.8, player.group.position.z, COLOR_RED);
     
-    // Trigger vibration if mobile API is available
     if (navigator.vibrate) {
-        navigator.vibrate(200);
+        navigator.vibrate(250);
     }
 
-    // Save Score
     const finalScore = Math.floor(score);
     finalScoreEl.textContent = finalScore;
     
     if (finalScore > highScore) {
         highScore = finalScore;
-        localStorage.setItem('cyber_parkour_highscore', highScore);
+        localStorage.setItem('cyber_parkour_3d_highscore', highScore);
         highScoreEl.textContent = String(highScore).padStart(5, '0');
         newRecordTag.classList.remove('hidden');
     } else {
@@ -802,22 +664,138 @@ function gameOver() {
     
     bestScoreEl.textContent = highScore;
     
-    // Draw crashed state once
-    draw();
-    
-    // Show GameOver overlay
     setTimeout(() => {
         gameOverScreen.classList.remove('hidden');
-    }, 500);
+    }, 600);
 }
 
-// Event Listeners for UI Menu buttons
+// UI Buttons Click
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 
-// In-game dynamic styling helper (aesthetic checks)
-function drawStartScreenBackground() {
-    init();
-    draw();
+// --- MAIN 3D GAMELOOP ---
+function tick() {
+    requestAnimationFrame(tick);
+    
+    const dt = Math.min(0.03, clock.getDelta()); // Cap delta time for clean physics
+
+    if (gameState === 'PLAYING') {
+        // 1. Texture-scroll the ground grid backward
+        if (groundGrid) {
+            groundGrid.material.map.offset.y -= gameSpeed * 0.00045 * (dt / 0.016);
+        }
+
+        // 2. Parallax skyscrapers loop
+        buildings.forEach(b => {
+            b.mesh.position.z += gameSpeed * 0.45 * dt;
+            // Recycle building to far distance once it exits behind camera
+            if (b.mesh.position.z > 25) {
+                b.mesh.position.z = -450 - Math.random() * 50;
+                b.mesh.position.x = b.side * (18 + Math.random() * 40);
+                
+                const isPink = Math.random() < 0.5;
+                b.mesh.material.emissive.setHex(isPink ? COLOR_PINK : COLOR_PURPLE);
+            }
+        });
+
+        // 3. Spawning Obstacles
+        obstacleTimer += dt;
+        if (obstacleTimer >= nextObstacleTime) {
+            obstacles.push(new Obstacle3D());
+            obstacleTimer = 0;
+            // Delay gets shorter as velocity increases
+            nextObstacleTime = Math.max(0.65, 1.85 - (gameSpeed * 0.015) + Math.random() * 0.4);
+        }
+
+        // 4. Update Obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            const o = obstacles[i];
+            o.update(dt);
+
+            // Check Bounding Collision
+            if (checkCollision3D(player, o)) {
+                gameOver();
+                return;
+            }
+
+            // Successfully passed
+            if (o.z > player.group.position.z + 1.0 && !o.dodged) {
+                o.dodged = true;
+                score += 150;
+                
+                // Speed multiplier combo display
+                const combo = (1 + (gameSpeed - 35) * 0.03).toFixed(1);
+                comboText.textContent = combo + 'x';
+
+                // Golden flash sparks
+                spawnSparks3D(0, player.group.position.y + 0.5, o.z, COLOR_GOLD);
+            }
+
+            // Recycle far offscreen obstacles
+            if (o.z > 15) {
+                o.destroy();
+                obstacles.splice(i, 1);
+            }
+        }
+
+        // 5. Update Player Physics & Anims
+        player.update(dt);
+
+        // 6. Slowly accelerate runner
+        distanceRun += dt;
+        score += dt * 15;
+        if (gameSpeed < MAX_SPEED) {
+            gameSpeed += 0.25 * dt;
+        }
+
+        currentScoreEl.textContent = String(Math.floor(score)).padStart(5, '0');
+    }
+
+    // 7. Particle system update (Common across all states)
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update(dt);
+        if (p.life <= 0) {
+            p.destroy();
+            particles.splice(i, 1);
+        }
+    }
+
+    // 8. Dynamic Chase Camera Position
+    if (player) {
+        // Interpolate camera to sit behind the player's Y level smoothly (lerp)
+        const targetCamY = player.isSliding ? 3.0 : 4.5 + (player.y - 0.1) * 0.4;
+        camera.position.y += (targetCamY - camera.position.y) * 0.1;
+        
+        // Tilt camera slightly to look downward or upward based on runner's altitude
+        const targetLookY = 1.5 + (player.y - 0.1) * 0.2;
+        camera.lookAt(0, targetLookY, 0);
+
+        // Apply screen shake on crash
+        if (cameraShake > 0) {
+            camera.position.x = (Math.random() - 0.5) * cameraShake;
+            camera.position.y += (Math.random() - 0.5) * cameraShake;
+            cameraShake -= dt * 4;
+        } else {
+            camera.position.x = 0;
+        }
+    }
+
+    // Render WebGL frame
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
 }
-drawStartScreenBackground();
+
+// Window resizing
+window.addEventListener('resize', () => {
+    if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+});
+
+// Bootstrap WebGL Scene
+initThree();
+requestAnimationFrame(tick);
