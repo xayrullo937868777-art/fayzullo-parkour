@@ -1,10 +1,10 @@
 /**
- * Cyber Forest Parkour 3D - Breathtaking 3D WebGL Forest Runner
- * Valley Arcade Grand Edition: Endless Grassy Ground, Stones, Colorful Flowers,
- * Upgraded Space Ninja, Cyber Katana, Dual Jetpacks, Abundant Coins, 3D Cherries/Fruits,
- * Hover-Cars, Advanced Flapping Tropical Birds, Dynamic Drop Shadow (Soya!), 
- * Side Neon Lampposts (Yonbosh svetlar!), Day-Sunset-Night Cycles,
- * Finish Victory Gate (Final!), Level System and HUD Coin Tracker!
+ * Cyber City Parkour 3D - Breathtaking 3D WebGL Neon Runner
+ * Valley Arcade Grand City Edition: Endless Dark Asphalt Grid, Glowing Side Neon Lampposts,
+ * Procedural Skyscrapers with vertical neon stripes, Cyber Katana, Dual Jetpacks,
+ * Abundant Gold Coins, 3D Collectible Fruits/Cherries, High-Speed Hover-Cars,
+ * Flapping Cyber-Birds, Pitch-Black Day-Sunset-Night themes (Svetlar o'chirilgan!),
+ * Dynamic Drop Shadows, and a Massive Victory Finish Gate (Final!) at 1800m.
  * Powered by Three.js. 3-Lane Horizontal Steering.
  */
 
@@ -50,7 +50,7 @@ let currentLevel = 1;
 let distanceRun = 0;
 const LEVEL_DISTANCE_GOAL = 1800; // Meters to reach the Victory Gate (Final!)
 
-let highScore = parseInt(localStorage.getItem('cyber_forest_grand_highscore')) || 0;
+let highScore = parseInt(localStorage.getItem('cyber_city_grand_highscore')) || 0;
 let gameSpeed = 38; // Z-axis speed
 const MAX_SPEED = 82;
 let obstacleTimer = 0;
@@ -66,7 +66,7 @@ let coins = [];
 let fruits = []; 
 let hoverCars = [];
 let birds = [];
-let trees = [];
+let buildings = []; // Skyscrapers flanking the cyber road (O'rmon o'rniga shahar!)
 let lampposts = []; // Neon Lampposts flanking the runway (Yonbosh svetlar!)
 let clouds = [];
 let pollen = [];
@@ -76,7 +76,7 @@ let groundPath;
 let massiveFloor;
 
 // Lights
-let ambientLight, sunLight, skyLight;
+let ambientLight, sunLight;
 
 // Bounding lane coordinates (3 Lanes: Left, Center, Right)
 const LANE_WIDTH = 2.2;
@@ -91,19 +91,19 @@ const COLOR_GOLD = 0xffbe0b;
 const COLOR_RED = 0xff3333;
 const COLOR_CHERRY = 0xff0033;
 
-// Vibrant Sky & Sunlit Mist Themes
-const COLOR_SKY_BLUE = 0x5fa9f8;
-const COLOR_SUN_MIST = 0x9ed2ff;
+// Pitch-Black Twilight Sky & Dark Misty themes (Svetlar o'chirilgan!)
+const COLOR_SKY_DARK = 0x010103;
+const COLOR_MIST_DARK = 0x030107;
 
 highScoreEl.textContent = String(highScore).padStart(5, '0');
 hudCoins.textContent = '000';
 hudLevel.textContent = '1';
 
 function initThree() {
-    // 1. Create Scene with Beautiful Blue Sky & Light Sunlit Mist
+    // 1. Create Scene with pitch black sky & mysterious cyber fog
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(COLOR_SKY_BLUE);
-    scene.fog = new THREE.FogExp2(COLOR_SUN_MIST, 0.0075);
+    scene.background = new THREE.Color(COLOR_SKY_DARK);
+    scene.fog = new THREE.FogExp2(COLOR_MIST_DARK, 0.0085);
 
     // 2. Setup Perspective Chase Camera
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -116,29 +116,26 @@ function initThree() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
 
-    // 4. Warm Day Lights (Daylight Sun)
-    ambientLight = new THREE.AmbientLight(0xeef6ff, 0.95);
+    // 4. Extremely Dim Lights (Svetni o'chirish/Qorong'i shahar!)
+    ambientLight = new THREE.AmbientLight(0x0e1115, 0.08); // Very dim silhouette lighting
     scene.add(ambientLight);
 
-    sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
-    sunLight.position.set(15, 45, 15);
+    // Dynamic headlights/sunlight is disabled or extremely low to prioritize glowing neons
+    sunLight = new THREE.DirectionalLight(COLOR_CYAN, 0.25);
+    sunLight.position.set(10, 30, 10);
     scene.add(sunLight);
 
-    skyLight = new THREE.DirectionalLight(0xaad3ff, 0.6);
-    skyLight.position.set(-15, 20, -10);
-    scene.add(skyLight);
+    // 5. Build Endless Asphalt Cyber City Ground (Yam-yashil o'rniga qora shahar yo'li!)
+    createEndlessAsphaltGround();
 
-    // 5. Build Endless Grassy Ground Floor (Hamma joyni tagiga yer qo'shish)
-    createEndlessGrassyGround();
+    // 6. Build Elevated Neon Highway Path
+    createCyberHighway();
 
-    // 6. Build Elevated Forest Path
-    createForestPath();
-
-    // 7. Generate 3D Clouds (High in Sky)
+    // 7. Generate 3D Clouds (Drifting above buildings)
     create3DClouds();
 
-    // 8. Generate 3D Trees, Rocks, Flowers & Pollen (Daraxt, Tosh va Gullar!)
-    create3DForest();
+    // 8. Generate 3D Skyscrapers & Cyber Detailing (O'rmon o'rniga shahar!)
+    create3DBuildings();
 
     // 9. Generate Neon Lampposts on Path Sides (Yonboshda neon svetlar!)
     createNeonLampposts();
@@ -147,16 +144,16 @@ function initThree() {
     player = new Player3D();
 }
 
-// Massive endless grassy terrain under everything
-function createEndlessGrassyGround() {
+// Massive endless dark grid terrain under everything (Shahar tagi!)
+function createEndlessAsphaltGround() {
     const width = 800;
     const length = 1200;
 
     const floorGeo = new THREE.PlaneGeometry(width, length);
     const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x143c1a, // Lush green meadow grass
-        roughness: 0.9,
-        metalness: 0.1,
+        color: 0x020204, // Deep dark cyber asphalt
+        roughness: 0.95,
+        metalness: 0.15,
         flatShading: true
     });
 
@@ -166,8 +163,8 @@ function createEndlessGrassyGround() {
     scene.add(massiveFloor);
 }
 
-// Elevated dirt/neon forest runway
-function createForestPath() {
+// Elevated Cyber highway with glowing neon lanes
+function createCyberHighway() {
     const width = 10;
     const length = 500;
     
@@ -176,20 +173,24 @@ function createForestPath() {
     pathCanvas.height = 128;
     const pctx = pathCanvas.getContext('2d');
     
-    pctx.fillStyle = '#112c1b';
+    // Pitch black asphalt base
+    pctx.fillStyle = '#06060a';
     pctx.fillRect(0, 0, 128, 128);
     
-    pctx.fillStyle = '#3d2b1f';
+    // High-tech dark road lanes
+    pctx.fillStyle = '#0b0c10';
     pctx.fillRect(25, 0, 78, 128);
     
-    pctx.strokeStyle = 'rgba(57, 255, 20, 0.45)';
+    // Grid neon warning lane separators
+    pctx.strokeStyle = 'rgba(0, 240, 255, 0.35)'; // Cyan
     pctx.lineWidth = 4;
     pctx.beginPath();
     pctx.moveTo(42, 0); pctx.lineTo(42, 128);
     pctx.moveTo(86, 0); pctx.lineTo(86, 128);
     pctx.stroke();
 
-    pctx.strokeStyle = '#39ff14';
+    // Neon glowing grid border
+    pctx.strokeStyle = '#ff007f'; // Pink
     pctx.lineWidth = 6;
     pctx.strokeRect(0, 0, 128, 128);
     
@@ -201,10 +202,10 @@ function createForestPath() {
     const groundGeo = new THREE.PlaneGeometry(width, length);
     const groundMat = new THREE.MeshStandardMaterial({
         map: pathTexture,
-        roughness: 0.4,
-        metalness: 0.3,
-        emissive: 0x071e10,
-        emissiveIntensity: 0.3
+        roughness: 0.3,
+        metalness: 0.85,
+        emissive: 0x05010a,
+        emissiveIntensity: 0.4
     });
 
     groundPath = new THREE.Mesh(groundGeo, groundMat);
@@ -212,9 +213,9 @@ function createForestPath() {
     groundPath.position.set(0, 0.02, -length / 3); // Elevated
     scene.add(groundPath);
 
-    // Flanking neon boundary wires
+    // Flanking glowing cyber wires
     const wireGeo = new THREE.CylinderGeometry(0.08, 0.08, length, 8);
-    const wireMat = new THREE.MeshBasicMaterial({ color: COLOR_GREEN });
+    const wireMat = new THREE.MeshBasicMaterial({ color: COLOR_PINK });
     
     const wireLeft = new THREE.Mesh(wireGeo, wireMat);
     wireLeft.rotation.x = Math.PI / 2;
@@ -226,13 +227,15 @@ function createForestPath() {
     scene.add(wireRight);
 }
 
-// Procedural Fluffy Cloud Generator (Clusters of white spheres)
+// Procedural Fluffy Cloud Generator (High cyber mist drifting)
 function create3DClouds() {
     const cloudMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
+        color: 0x221133, // Glowing dark purple clouds
         roughness: 0.95,
         metalness: 0.05,
-        flatShading: true
+        flatShading: true,
+        emissive: 0x0c001a,
+        emissiveIntensity: 0.5
     });
 
     for (let i = 0; i < 12; i++) {
@@ -240,24 +243,24 @@ function create3DClouds() {
         const sphereCount = 4 + Math.floor(Math.random() * 3);
         
         for (let s = 0; s < sphereCount; s++) {
-            const radius = 1.6 + Math.random() * 1.8;
+            const radius = 2.0 + Math.random() * 2.2;
             const sGeo = new THREE.SphereGeometry(radius, 8, 8);
             const sMesh = new THREE.Mesh(sGeo, cloudMat);
             
-            const xOff = (Math.random() - 0.5) * 2.8;
+            const xOff = (Math.random() - 0.5) * 3.5;
             const yOff = (Math.random() - 0.5) * 0.8;
-            const zOff = (Math.random() - 0.5) * 2.4;
+            const zOff = (Math.random() - 0.5) * 2.8;
             sMesh.position.set(xOff, yOff, zOff);
             
             cloudGroup.add(sMesh);
         }
 
-        const x = (Math.random() - 0.5) * 60;
-        const y = 14 + Math.random() * 8;
+        const x = (Math.random() - 0.5) * 70;
+        const y = 18 + Math.random() * 9;
         const z = -Math.random() * 450 - 50;
         
         cloudGroup.position.set(x, y, z);
-        const driftSpeed = 0.15 + Math.random() * 0.25;
+        const driftSpeed = 0.1 + Math.random() * 0.2;
         
         scene.add(cloudGroup);
         clouds.push({
@@ -268,142 +271,107 @@ function create3DClouds() {
     }
 }
 
-// Procedural Trees, Rocks & Colorful Flowers Generator (Daraxt, Tosh va Gullar!)
-function create3DForest() {
-    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 4.5, 6);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4d3222, roughness: 0.95, flatShading: true });
-    
-    const leavesMat1 = new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.85, flatShading: true });
-    const leavesMat2 = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.85, flatShading: true });
-    const sunlitLeavesMat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.85, flatShading: true });
+// --- PROCEDURAL 3D NEON SKYSCRAPERS CLASS (O'rmon o'rniga shahar!) ---
+class Building3D {
+    constructor(side, z) {
+        this.side = side; // -1: Left side, 1: Right side
+        this.z = z;
 
-    const rockGeo = new THREE.DodecahedronGeometry(1.0, 0);
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x7c858b, roughness: 0.8, metalness: 0.2, flatShading: true });
+        // Randomized premium dimensions
+        this.w = 3.2 + Math.random() * 3.5;
+        this.h = 16 + Math.random() * 28;
+        this.d = 3.2 + Math.random() * 3.5;
 
-    // Colorful 3D Flower Materials (Gul ham bo'lsin!)
-    const stemGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.35, 6);
-    const stemMat = new THREE.MeshStandardMaterial({ color: 0x27ae60, roughness: 0.9 });
-    
-    const flowerCenterGeo = new THREE.SphereGeometry(0.08, 6, 6);
-    const flowerCenterMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.8 }); // Yellow center
-
-    const petalGeo = new THREE.SphereGeometry(0.06, 6, 6);
-    const petalColors = [0xff3366, 0xff8800, 0x00ccff, 0xff00ff];
-
-    for (let i = 0; i < 40; i++) {
-        const treeGroup = new THREE.Group();
-        
-        // 1. Tree Trunk
-        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        trunk.position.y = 2.25;
-        treeGroup.add(trunk);
-        
-        // 2. Tree Leaves Cones
-        const leafGeo1 = new THREE.ConeGeometry(1.6, 2.0, 5);
-        const leafGeo2 = new THREE.ConeGeometry(1.2, 1.6, 5);
-        const leafGeo3 = new THREE.ConeGeometry(0.8, 1.2, 5);
-        
-        const isSunlit = Math.random() < 0.3;
-        const leafMat = isSunlit ? sunlitLeavesMat : (Math.random() < 0.5 ? leavesMat1 : leavesMat2);
-        
-        const leaves1 = new THREE.Mesh(leafGeo1, leafMat);
-        leaves1.position.y = 3.6;
-        treeGroup.add(leaves1);
-
-        const leaves2 = new THREE.Mesh(leafGeo2, leafMat);
-        leaves2.position.y = 4.8;
-        treeGroup.add(leaves2);
-
-        const leaves3 = new THREE.Mesh(leafGeo3, leafMat);
-        leaves3.position.y = 5.8;
-        treeGroup.add(leaves3);
-
-        // 3. Add 1-2 Stylized Rocks next to the tree (Daraxt yoniga tosh qo'shish)
-        const rockCount = 1 + Math.floor(Math.random() * 2);
-        for (let r = 0; r < rockCount; r++) {
-            const rock = new THREE.Mesh(rockGeo, rockMat);
-            
-            const rx = (Math.random() - 0.5) * 2.2;
-            const rz = (Math.random() - 0.5) * 2.2;
-            
-            const rw = 0.3 + Math.random() * 0.7;
-            const rh = 0.2 + Math.random() * 0.5;
-            const rd = 0.3 + Math.random() * 0.7;
-            rock.scale.set(rw, rh, rd);
-            rock.position.set(rx, rh / 2, rz);
-            
-            rock.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
-            );
-
-            treeGroup.add(rock);
-        }
-
-        // 4. Add 2-3 procedurally modeled 3D Flowers next to tree/rocks (Gul ham bo'lsin!)
-        const flowerCount = 2 + Math.floor(Math.random() * 2);
-        for (let f = 0; f < flowerCount; f++) {
-            const flowerGroup = new THREE.Group();
-
-            // Stem
-            const stem = new THREE.Mesh(stemGeo, stemMat);
-            stem.position.y = 0.175;
-            flowerGroup.add(stem);
-
-            // Yellow center
-            const center = new THREE.Mesh(flowerCenterGeo, flowerCenterMat);
-            center.position.y = 0.35;
-            flowerGroup.add(center);
-
-            // Petals (4 spheres clustered around center)
-            const petalMat = new THREE.MeshStandardMaterial({ 
-                color: petalColors[Math.floor(Math.random() * petalColors.length)],
-                roughness: 0.8 
-            });
-
-            for (let p = 0; p < 4; p++) {
-                const petal = new THREE.Mesh(petalGeo, petalMat);
-                const angle = (p / 4) * Math.PI * 2;
-                const px = Math.cos(angle) * 0.08;
-                const pz = Math.sin(angle) * 0.08;
-                petal.position.set(px, 0.35, pz);
-                flowerGroup.add(petal);
-            }
-
-            const fx = (Math.random() - 0.5) * 3.5;
-            const fz = (Math.random() - 0.5) * 3.5;
-            flowerGroup.position.set(fx, 0, fz);
-
-            treeGroup.add(flowerGroup);
-        }
-
-        // Side placement variables
-        const side = Math.random() < 0.5 ? -1 : 1;
-        const xPos = side * (5.5 + Math.random() * 25);
-        const zPos = -Math.random() * 450 - 50;
-        
-        const scaleVal = 0.8 + Math.random() * 0.7;
-        treeGroup.scale.set(scaleVal, scaleVal, scaleVal);
-        treeGroup.position.set(xPos, 0, zPos);
-        
-        scene.add(treeGroup);
-        trees.push({
-            mesh: treeGroup,
-            side: side,
-            scale: scaleVal,
-            originalX: xPos
-        });
+        this.buildBuildingMesh();
     }
 
-    // 5. Sun Pollen
+    buildBuildingMesh() {
+        this.group = new THREE.Group();
+
+        // 1. Tall rectangular skyscraper block
+        const blockGeo = new THREE.BoxGeometry(this.w, this.h, this.d);
+        const blockMat = new THREE.MeshStandardMaterial({
+            color: 0x090a0f, // Deep reflective dark grey/black
+            roughness: 0.15,
+            metalness: 0.95,
+            flatShading: true
+        });
+        this.block = new THREE.Mesh(blockGeo, blockMat);
+        this.block.position.y = this.h / 2;
+        this.group.add(this.block);
+
+        // 2. Vertical glowing neon window stripes on the corners (Skyscraper glow!)
+        const stripeColors = [COLOR_CYAN, COLOR_PINK, COLOR_GREEN, COLOR_PURPLE];
+        this.neonColor = stripeColors[Math.floor(Math.random() * stripeColors.length)];
+
+        const stripeGeo = new THREE.BoxGeometry(0.12, this.h, 0.12);
+        const stripeMat = new THREE.MeshStandardMaterial({
+            color: this.neonColor,
+            emissive: this.neonColor,
+            emissiveIntensity: 1.4
+        });
+
+        // Left front corner
+        this.stripe1 = new THREE.Mesh(stripeGeo, stripeMat);
+        this.stripe1.position.set(-this.w / 2 - 0.02, this.h / 2, this.d / 2 + 0.02);
+        this.group.add(this.stripe1);
+
+        // Right front corner
+        this.stripe2 = new THREE.Mesh(stripeGeo, stripeMat);
+        this.stripe2.position.set(this.w / 2 + 0.02, this.h / 2, this.d / 2 + 0.02);
+        this.group.add(this.stripe2);
+
+        // 3. Penthouse neon crown at the top
+        const crownGeo = new THREE.BoxGeometry(this.w * 0.85, 0.4, this.d * 0.85);
+        const crownMat = new THREE.MeshStandardMaterial({
+            color: COLOR_GOLD,
+            emissive: COLOR_GOLD,
+            emissiveIntensity: 1.8
+        });
+        this.crown = new THREE.Mesh(crownGeo, crownMat);
+        this.crown.position.y = this.h + 0.2;
+        this.group.add(this.crown);
+
+        // Spawn placement
+        this.x = this.side * (6.8 + Math.random() * 22);
+        this.group.position.set(this.x, 0, this.z);
+        scene.add(this.group);
+    }
+
+    update(dt) {
+        this.z += gameSpeed * 0.45 * dt;
+        this.group.position.z = this.z;
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        this.group.traverse(node => {
+            if (node.isMesh) {
+                node.geometry.dispose();
+                node.material.dispose();
+            }
+        });
+    }
+}
+
+function create3DBuildings() {
+    // Generate 32 buildings flanking the runway canyon
+    const spacing = 28;
+    for (let i = 0; i < 18; i++) {
+        const z = -i * spacing - 15;
+        // Flank Left and Right
+        buildings.push(new Building3D(-1, z));
+        buildings.push(new Building3D(1, z));
+    }
+
+    // 4. Sun Pollen (Representing floating digital cyber particles!)
     const pGeo = new THREE.SphereGeometry(0.08, 6, 6);
-    const pMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+    const pMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN, transparent: true, opacity: 0.8 });
     
     for (let i = 0; i < 35; i++) {
         const pollenMesh = new THREE.Mesh(pGeo, pMat);
         const x = (Math.random() - 0.5) * 20;
-        const y = 0.5 + Math.random() * 4.5;
+        const y = 0.5 + Math.random() * 6.5;
         const z = -Math.random() * 450 - 20;
         pollenMesh.position.set(x, y, z);
         
@@ -453,7 +421,7 @@ class Lamppost3D {
         const bulbMat = new THREE.MeshStandardMaterial({
             color: lampColor,
             emissive: lampColor,
-            emissiveIntensity: 1.5
+            emissiveIntensity: 2.2 // Extreme neon emissive
         });
         this.bulb = new THREE.Mesh(bulbGeo, bulbMat);
         this.bulb.position.set(this.side * 1.2, 3.82, 0);
@@ -482,11 +450,9 @@ class Lamppost3D {
 }
 
 function createNeonLampposts() {
-    // Generate 12 lampposts lined up along Z
     const spacing = 40;
     for (let i = 0; i < 12; i++) {
         const z = -i * spacing - 20;
-        // Alternating Left / Right posts
         lampposts.push(new Lamppost3D(-1, z));
         lampposts.push(new Lamppost3D(1, z));
     }
@@ -536,7 +502,6 @@ class Coin3D {
     }
 }
 
-// Spawns 5 coins in a line, very frequently! (Tangalarni ko'paytirish!)
 function spawnCoinGroup() {
     const lane = Math.floor(Math.random() * 3) - 1;
     const startZ = -280;
@@ -546,7 +511,7 @@ function spawnCoinGroup() {
     }
 }
 
-// --- 3D COLLECTIBLE FRUITS CLASS (Fut/Fruit!) ---
+// --- 3D COLLECTIBLE FRUITS CLASS ---
 class Fruit3D {
     constructor(lane, z) {
         this.lane = lane;
@@ -559,7 +524,6 @@ class Fruit3D {
     buildFruitMesh() {
         this.group = new THREE.Group();
 
-        // Shiny Red Cherry/Apple
         const fruitGeo = new THREE.SphereGeometry(0.24, 8, 8);
         const fruitMat = new THREE.MeshStandardMaterial({
             color: COLOR_CHERRY,
@@ -569,17 +533,14 @@ class Fruit3D {
             emissiveIntensity: 0.5
         });
 
-        // Left cherry
         this.cherryLeft = new THREE.Mesh(fruitGeo, fruitMat);
         this.cherryLeft.position.set(-0.12, 0, 0);
         this.group.add(this.cherryLeft);
 
-        // Right cherry
         this.cherryRight = new THREE.Mesh(fruitGeo, fruitMat);
         this.cherryRight.position.set(0.12, -0.04, 0);
         this.group.add(this.cherryRight);
 
-        // Angled green stem
         const stemGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 6);
         const stemMat = new THREE.MeshStandardMaterial({ color: 0x27ae60 });
         
@@ -612,7 +573,7 @@ class Fruit3D {
     }
 }
 
-// --- 3D FUTURISTIC FLYING HOVER-CARS CLASS (Moshina qo'shish) ---
+// --- 3D FUTURISTIC FLYING HOVER-CARS CLASS ---
 class HoverCar3D {
     constructor() {
         this.z = -350;
@@ -682,7 +643,7 @@ class HoverCar3D {
     }
 }
 
-// --- ADVANCED 3D FLAPPING TROPICAL BIRDS CLASS (Kush ne chiroyli roq!) ---
+// --- ADVANCED 3D FLAPPING CYBER BIRDS CLASS ---
 class Bird3D {
     constructor() {
         this.z = -350;
@@ -698,7 +659,6 @@ class Bird3D {
     buildBirdMesh() {
         this.group = new THREE.Group();
 
-        // 1. Sleek cyan tropical bird body pointing forward (Chiroyli qush!)
         const bodyGeo = new THREE.ConeGeometry(0.2, 0.7, 6);
         bodyGeo.rotateX(Math.PI / 2); // Point forward
         const bodyMat = new THREE.MeshStandardMaterial({ 
@@ -710,7 +670,6 @@ class Bird3D {
         this.body = new THREE.Mesh(bodyGeo, bodyMat);
         this.group.add(this.body);
 
-        // 2. Glowing yellow beak
         const beakGeo = new THREE.ConeGeometry(0.06, 0.22, 5);
         beakGeo.rotateX(Math.PI / 2);
         const beakMat = new THREE.MeshStandardMaterial({ color: COLOR_GOLD, roughness: 0.1 });
@@ -718,7 +677,6 @@ class Bird3D {
         this.beak.position.set(0, 0, 0.45); // in front
         this.group.add(this.beak);
 
-        // 3. Elegant trailing neon pink tail feathers (Magical trail!)
         const tailGeo = new THREE.BoxGeometry(0.05, 0.01, 0.7);
         tailGeo.translate(0, 0, -0.35); // offset pivot
         const tailMat = new THREE.MeshStandardMaterial({ color: COLOR_PINK, roughness: 0.9 });
@@ -733,7 +691,6 @@ class Bird3D {
         this.tailRight.position.x = 0.06;
         this.group.add(this.tailRight);
 
-        // 4. Large wing meshes attached at pivot shoulders
         const wingGeo = new THREE.BoxGeometry(0.7, 0.02, 0.28);
         wingGeo.translate(0.35, 0, 0); // shift anchor
 
@@ -756,12 +713,10 @@ class Bird3D {
         this.z += (gameSpeed + this.speedOffset) * dt;
         this.group.position.z = this.z;
 
-        // Beautiful wings flapping oscillation
         const flap = Math.sin(time * 15 + this.wingOffset) * 0.75;
         this.leftWing.rotation.z = flap;
         this.rightWing.rotation.z = -flap; 
 
-        // Gentle tail bobbing
         this.tailLeft.rotation.x = Math.sin(time * 8) * 0.15;
         this.tailRight.rotation.x = Math.sin(time * 8) * 0.15;
     }
@@ -828,13 +783,12 @@ function spawnSparks3D(x, y, z, color) {
     }
 }
 
-// --- 3D SPACE NINJA PLAYER WITH KATANA, JETPACKS, CAPE & DROP SHADOW! (Soya!) ---
+// --- 3D SPACE NINJA PLAYER WITH DROP SHADOW! ---
 class Player3D {
     constructor() {
         this.group = new THREE.Group();
         scene.add(this.group);
 
-        // Core Physics
         this.y = 0.1;
         this.vy = 0;
         this.gravity = -54; 
@@ -849,20 +803,18 @@ class Player3D {
         this.isSliding = false;
         this.animTime = 0;
 
-        // Hitbox parameters
         this.width = 0.9;
         this.height = 1.6;
         this.depth = 1.0;
 
-        // Build Ninja Mesh structures
         this.buildSpaceNinjaMesh();
 
         // 7. Dynamic Drop Shadow circle under player flat on grass (Soya ham bo'lsin!)
         const shadowGeo = new THREE.RingGeometry(0.01, 0.42, 16);
         const shadowMat = new THREE.MeshBasicMaterial({
-            color: 0x030604, 
+            color: 0x010201, 
             transparent: true, 
-            opacity: 0.5, 
+            opacity: 0.65, 
             side: THREE.DoubleSide 
         });
         this.shadow = new THREE.Mesh(shadowGeo, shadowMat);
@@ -877,33 +829,26 @@ class Player3D {
         const cyanVisorMat = new THREE.MeshStandardMaterial({ color: COLOR_CYAN, emissive: COLOR_CYAN, emissiveIntensity: 1.0 });
         const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.1, metalness: 0.95 });
 
-        // 1. Torso
-        const torsoGeo = new THREE.BoxGeometry(0.72, 0.9, 0.45);
-        this.torso = new THREE.Mesh(torsoGeo, darkSuitsMat);
+        this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.9, 0.45), darkSuitsMat);
         this.torso.position.y = 1.0;
         this.group.add(this.torso);
 
-        // Glowing chest logo
         const coreGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 8);
         this.chestCore = new THREE.Mesh(coreGeo, neonGreenMat);
         this.chestCore.rotation.x = Math.PI / 2;
         this.chestCore.position.set(0, 1.15, 0.23);
         this.group.add(this.chestCore);
 
-        // 2. Helmet
-        const helmGeo = new THREE.SphereGeometry(0.26, 12, 12);
-        this.head = new THREE.Mesh(helmGeo, chromeMat);
+        this.head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 12), chromeMat);
         this.head.position.y = 1.65;
         this.group.add(this.head);
 
-        // Visor
         const visorGeo = new THREE.SphereGeometry(0.27, 12, 12, 0, Math.PI, 0, Math.PI / 2);
         this.visor = new THREE.Mesh(visorGeo, cyanVisorMat);
         this.visor.rotation.x = Math.PI / 2.5;
         this.visor.position.set(0, 1.68, 0.05);
         this.group.add(this.visor);
 
-        // 3. Dynamic striped Cape
         this.capeGroup = new THREE.Group();
         this.capeGroup.position.set(0, 1.35, -0.22);
         this.group.add(this.capeGroup);
@@ -913,7 +858,6 @@ class Player3D {
         this.cape = new THREE.Mesh(capeGeo, neonGreenMat);
         this.capeGroup.add(this.cape);
 
-        // Neon Pink borders
         const stripeGeo = new THREE.BoxGeometry(0.06, 1.3, 0.04);
         stripeGeo.translate(0, -0.65, 0);
         
@@ -925,7 +869,6 @@ class Player3D {
         stripeRight.position.x = 0.35;
         this.capeGroup.add(stripeRight);
 
-        // 4. Cyber Katana Sword
         this.katanaGroup = new THREE.Group();
         this.katanaGroup.position.set(0.12, 1.05, -0.25);
         this.katanaGroup.rotation.z = -Math.PI / 4; 
@@ -942,7 +885,6 @@ class Player3D {
         blade.position.y = -0.05;
         this.katanaGroup.add(blade);
 
-        // 5. Dual Jetpacks
         this.jetpackLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45, 8), chromeMat);
         this.jetpackLeft.position.set(-0.25, 1.25, -0.23);
         this.group.add(this.jetpackLeft);
@@ -951,7 +893,6 @@ class Player3D {
         this.jetpackRight.position.x = 0.25;
         this.group.add(this.jetpackRight);
 
-        // Jet Cones
         const flameGeo = new THREE.ConeGeometry(0.06, 0.32, 8);
         flameGeo.translate(0, -0.16, 0); 
         const flameMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
@@ -965,7 +906,6 @@ class Player3D {
         this.flameRight.visible = false;
         this.jetpackRight.add(this.flameRight);
 
-        // 6. Limbs
         const limbGeo = new THREE.BoxGeometry(0.18, 0.5, 0.18);
         
         this.leftArm = new THREE.Mesh(limbGeo, darkSuitsMat);
@@ -1106,14 +1046,11 @@ class Player3D {
             this.capeGroup.rotation.x = baseDragAngle + waveAngle;
         }
 
-        // 8. Update real-time Flat shadow position and scale (Soya ham bo'lsin!)
         if (this.shadow) {
             this.shadow.position.set(this.group.position.x, 0.03, this.group.position.z);
-            
-            // Fades and scales down with height
             const heightRatio = Math.max(0, 1 - (this.y - 0.1) * 0.08);
             this.shadow.scale.set(heightRatio, heightRatio, heightRatio);
-            this.shadow.material.opacity = 0.5 * heightRatio;
+            this.shadow.material.opacity = 0.65 * heightRatio;
         }
     }
 
@@ -1133,7 +1070,6 @@ class VictoryGate3D {
     buildGateMesh() {
         this.group = new THREE.Group();
 
-        // 1. Two large neon arch support pillars
         const pillarGeo = new THREE.CylinderGeometry(0.3, 0.4, 6.0, 8);
         const pillarMat = new THREE.MeshStandardMaterial({ 
             color: COLOR_GREEN, 
@@ -1149,7 +1085,6 @@ class VictoryGate3D {
         this.pillarRight.position.x = LANE_WIDTH + 1.2;
         this.group.add(this.pillarRight);
 
-        // 2. Large horizontal glowing header beam with gold warning trim
         const beamGeo = new THREE.BoxGeometry(7.0, 0.6, 0.6);
         const beamMat = new THREE.MeshStandardMaterial({ 
             color: COLOR_CYAN, 
@@ -1161,7 +1096,6 @@ class VictoryGate3D {
         this.header.position.set(0, 6.0, 0);
         this.group.add(this.header);
 
-        // 3. Huge Glowing "FINISH" floating core
         const coreGeo = new THREE.BoxGeometry(3.5, 0.8, 0.1);
         const coreMat = new THREE.MeshStandardMaterial({ 
             color: COLOR_GOLD, 
@@ -1177,11 +1111,8 @@ class VictoryGate3D {
     }
 
     update(dt) {
-        // Scrolls backward just like normal scenery
         this.z += gameSpeed * dt;
         this.group.position.z = this.z;
-        
-        // Glow pulsation
         this.core.material.emissiveIntensity = 1.2 + Math.sin(clock.getElapsedTime() * 12) * 0.6;
     }
 
@@ -1349,46 +1280,62 @@ function checkFruitCollision(p, f) {
     return dist < 1.15; 
 }
 
-// --- VISUAL DAY-NIGHT CYCLES TRANSITION (Kechqurun ham bo'lsin!) ---
+// --- VISUAL DAY-NIGHT PITCH-BLACK CYCLES TRANSITION (Svetlar o'chirilgan!) ---
 function transitionLevelTheme(level) {
     if (!scene) return;
 
-    // Cycle 3 gorgeous environments: Day, Sunset (Kechqurun), Cyber Night (Tungi)
+    // Pitch-black night visual filters (Svetni o'chirish/Qorong'i shahar)
     if (level === 1) {
-        // Level 1: Sunlit Day Blue
-        scene.background.setHex(COLOR_SKY_BLUE);
-        scene.fog.color.setHex(COLOR_SUN_MIST);
-        if (ambientLight) ambientLight.color.setHex(0xeef6ff);
-        if (sunLight) sunLight.color.setHex(0xffffff);
-        if (massiveFloor) massiveFloor.material.color.setHex(0x143c1a); // Lush Meadow
+        // Level 1: Cyber Cyan Night
+        scene.background.setHex(0x010103); // Pitch black
+        scene.fog.color.setHex(0x030206); // Dark violet fog
+        scene.fog.density = 0.009;
+        
+        if (ambientLight) ambientLight.color.setHex(0x090a12); // extremely dim
+        if (sunLight) sunLight.color.setHex(COLOR_CYAN);
+        if (massiveFloor) massiveFloor.material.color.setHex(0x030306);
     } 
     
     else if (level === 2) {
-        // Level 2: Warm Evening Sunset / Kechqurun (Orange/Pink sky gradient feel)
-        scene.background.setHex(0xff7e5f); // sunset orange
-        scene.fog.color.setHex(0xfeb47b);
-        if (ambientLight) ambientLight.color.setHex(0xffdfc4); // warm light
-        if (sunLight) sunLight.color.setHex(0xffaa66); // deep orange sun
-        if (massiveFloor) massiveFloor.material.color.setHex(0x382c16); // Golden sunset earth
+        // Level 2: Twilight Sunset / Kechqurun (Svetlar o'chiq!)
+        scene.background.setHex(0x040102); // Deep night red
+        scene.fog.color.setHex(0x070204);
+        scene.fog.density = 0.009;
+
+        if (ambientLight) ambientLight.color.setHex(0x0c0608);
+        if (sunLight) sunLight.color.setHex(COLOR_PINK);
+        if (massiveFloor) massiveFloor.material.color.setHex(0x050203);
     } 
     
     else {
-        // Level 3: Cyber Night / Tungi O'rmon (Deep purple/green neon cyberglow)
-        scene.background.setHex(0x0b001a); // Deep dark purple
-        scene.fog.color.setHex(0x1a0f2e);
-        if (ambientLight) ambientLight.color.setHex(0x3a0066); // purple skyglow
-        if (sunLight) sunLight.color.setHex(COLOR_CYAN); // neon headlights
-        if (massiveFloor) massiveFloor.material.color.setHex(0x060f08); // Dark cyber grass
+        // Level 3: Deep Cyber Matrix Night
+        scene.background.setHex(0x000000); // Complete space black
+        scene.fog.color.setHex(0x010302); // Deep dark emerald green fog
+        scene.fog.density = 0.0095;
+
+        if (ambientLight) ambientLight.color.setHex(0x020804);
+        if (sunLight) sunLight.color.setHex(COLOR_GREEN);
+        if (massiveFloor) massiveFloor.material.color.setHex(0x010302);
     }
 
+    // Dynamic Skyscraper neon corner bars recolor based on theme
+    const colors = [COLOR_CYAN, COLOR_PINK, COLOR_GREEN, COLOR_PURPLE];
+    const levelColor = colors[(level - 1) % colors.length];
+
+    buildings.forEach(b => {
+        if (b.stripe1 && b.stripe2) {
+            b.stripe1.material.color.setHex(levelColor);
+            b.stripe1.material.emissive.setHex(levelColor);
+            b.stripe2.material.color.setHex(levelColor);
+            b.stripe2.material.emissive.setHex(levelColor);
+        }
+    });
+
     // Refresh Lampposts bulb neon colors to match theme
-    const colors = [COLOR_CYAN, COLOR_PINK, COLOR_PURPLE];
-    const lampColor = colors[(level - 1) % colors.length];
-    
     lampposts.forEach(lp => {
         if (lp.bulb) {
-            lp.bulb.material.color.setHex(lampColor);
-            lp.bulb.material.emissive.setHex(lampColor);
+            lp.bulb.material.color.setHex(levelColor);
+            lp.bulb.material.emissive.setHex(levelColor);
         }
     });
 
@@ -1584,7 +1531,7 @@ function gameOver() {
     
     if (finalScore > highScore) {
         highScore = finalScore;
-        localStorage.setItem('cyber_forest_grand_highscore', highScore);
+        localStorage.setItem('cyber_city_grand_highscore', highScore);
         highScoreEl.textContent = String(highScore).padStart(5, '0');
         newRecordTag.classList.remove('hidden');
     } else {
@@ -1606,7 +1553,7 @@ startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 nextLevelBtn.addEventListener('click', loadNextLevel);
 
-// --- MAIN 3D VALLEY MEADOW GAMELOOP ---
+// --- MAIN 3D CYBER CITY GAMELOOP ---
 function tick() {
     requestAnimationFrame(tick);
     
@@ -1614,17 +1561,19 @@ function tick() {
     const time = clock.getElapsedTime();
 
     if (gameState === 'PLAYING') {
-        // 1. Scroll forest path backward
+        // 1. Scroll neon highway backward
         if (groundPath) {
             groundPath.material.map.offset.y -= gameSpeed * 0.00045 * (dt / 0.016);
         }
 
-        // 2. Parallax forest trees & rocks loop
-        trees.forEach(t => {
-            t.mesh.position.z += gameSpeed * 0.45 * dt;
-            if (t.mesh.position.z > 25) {
-                t.mesh.position.z = -450 - Math.random() * 50;
-                t.mesh.position.x = t.side * (5.5 + Math.random() * 25);
+        // 2. Parallax skyscrapers canyon loop (O'rmon o'rniga shahar!)
+        buildings.forEach(b => {
+            b.update(dt);
+            if (b.z > 25) {
+                b.z = -450 - Math.random() * 50;
+                b.group.position.z = b.z;
+                b.x = b.side * (6.8 + Math.random() * 22);
+                b.group.position.x = b.x;
             }
         });
 
@@ -1632,7 +1581,6 @@ function tick() {
         lampposts.forEach(lp => {
             lp.update(dt);
             if (lp.z > 25) {
-                // Recycle way back
                 lp.z = -450;
                 lp.group.position.z = -450;
             }
@@ -1644,12 +1592,12 @@ function tick() {
             
             if (c.mesh.position.z > 40) {
                 c.mesh.position.z = -450 - Math.random() * 80;
-                c.mesh.position.x = (Math.random() - 0.5) * 60;
-                c.mesh.position.y = 14 + Math.random() * 8;
+                c.mesh.position.x = (Math.random() - 0.5) * 70;
+                c.mesh.position.y = 18 + Math.random() * 9;
             }
         });
 
-        // 5. Drift golden sunlit pollen
+        // 5. Drift digital sunlit particles
         pollen.forEach(p => {
             p.mesh.position.z += gameSpeed * 0.45 * dt;
             p.mesh.position.x += Math.sin(time * p.speed + p.timeOffset) * 0.035;
@@ -1658,7 +1606,7 @@ function tick() {
             if (p.mesh.position.z > 20) {
                 p.mesh.position.z = -450 - Math.random() * 30;
                 p.mesh.position.x = (Math.random() - 0.5) * 20;
-                p.mesh.position.y = 0.5 + Math.random() * 4.5;
+                p.mesh.position.y = 0.5 + Math.random() * 6.5;
             }
         });
 
@@ -1677,7 +1625,7 @@ function tick() {
             }
         }
 
-        // 8. Spawning flapping tropical birds periodically (Chiroyli qush!)
+        // 8. Spawning flapping cyber-birds periodically
         if (Math.random() < 0.006) {
             birds.push(new Bird3D());
         }
@@ -1692,7 +1640,7 @@ function tick() {
             }
         }
 
-        // 10. Spawning abundant gold coins! Every 1.65 seconds! (Tangani ko'paytirish!)
+        // 10. Spawning abundant gold coins! Every 1.65 seconds!
         coinGroupTimer += dt;
         if (coinGroupTimer >= 1.65 && distanceRun < LEVEL_DISTANCE_GOAL - 100) {
             spawnCoinGroup();
@@ -1707,7 +1655,6 @@ function tick() {
             if (checkCoinCollision(player, c)) {
                 c.collected = true;
                 
-                // Track coins and update coin counter
                 coinsCollected++;
                 hudCoins.textContent = String(coinsCollected).padStart(3, '0');
                 
@@ -1819,7 +1766,6 @@ function tick() {
         if (victoryGate) {
             victoryGate.update(dt);
             
-            // Check if player passes through the gate
             if (victoryGate.z >= player.group.position.z) {
                 triggerLevelVictory();
             }
@@ -1829,7 +1775,7 @@ function tick() {
         player.update(dt);
 
         // 19. Accelerate runner
-        distanceRun += gameSpeed * dt * 0.25; // in virtual meters
+        distanceRun += gameSpeed * dt * 0.25; 
         score += dt * 18;
         if (gameSpeed < MAX_SPEED) {
             gameSpeed += 0.28 * dt;
@@ -1839,7 +1785,6 @@ function tick() {
     } 
     
     else if (gameState === 'VICTORY') {
-        // Slow down and let player pass through gate
         if (victoryGate) {
             victoryGate.update(dt * 0.2);
         }
@@ -1885,6 +1830,6 @@ window.addEventListener('resize', () => {
     }
 });
 
-// Bootstrap Forest Scene
+// Bootstrap Cyber City Scene
 initThree();
 requestAnimationFrame(tick);
