@@ -1,8 +1,10 @@
 /**
  * Cyber Forest Parkour 3D - Breathtaking 3D WebGL Forest Runner
- * Valley Arcade Deluxe Edition: Endless Grassy Ground, Stones, Colorful Flowers,
- * Space Ninja, Cyber Katana, Dual Jetpacks, Abundant Coins, 3D Cherries/Fruits,
- * Hover-Cars & Flapping Birds!
+ * Valley Arcade Grand Edition: Endless Grassy Ground, Stones, Colorful Flowers,
+ * Upgraded Space Ninja, Cyber Katana, Dual Jetpacks, Abundant Coins, 3D Cherries/Fruits,
+ * Hover-Cars, Advanced Flapping Tropical Birds, Dynamic Drop Shadow (Soya!), 
+ * Side Neon Lampposts (Yonbosh svetlar!), Day-Sunset-Night Cycles,
+ * Finish Victory Gate (Final!), Level System and HUD Coin Tracker!
  * Powered by Three.js. 3-Lane Horizontal Steering.
  */
 
@@ -10,17 +12,27 @@
 const canvas = document.getElementById('gameCanvas');
 const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
+const victoryScreen = document.getElementById('victoryScreen');
 const hud = document.getElementById('hud');
 const currentScoreEl = document.getElementById('currentScore');
 const highScoreEl = document.getElementById('highScore');
 const finalScoreEl = document.getElementById('finalScore');
 const bestScoreEl = document.getElementById('bestScore');
+const finalCoinsEl = document.getElementById('finalCoins');
 const newRecordTag = document.getElementById('newRecordTag');
 const comboText = document.getElementById('comboText');
+
+// Coin & Level HUD Elements
+const hudCoins = document.getElementById('hudCoins');
+const hudLevel = document.getElementById('hudLevel');
+const victoryLevelEl = document.getElementById('victoryLevel');
+const victoryCoinsEl = document.getElementById('victoryCoins');
+const victoryScoreEl = document.getElementById('victoryScore');
 
 // Buttons & Touch
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
+const nextLevelBtn = document.getElementById('nextLevelBtn');
 const mobileLeftBtn = document.getElementById('mobileLeftBtn');
 const mobileRightBtn = document.getElementById('mobileRightBtn');
 const mobileSlideBtn = document.getElementById('mobileSlideBtn');
@@ -33,29 +45,38 @@ let clock = new THREE.Clock();
 // Game Parameters
 let gameState = 'START';
 let score = 0;
-let highScore = parseInt(localStorage.getItem('cyber_forest_deluxe_highscore')) || 0;
+let coinsCollected = 0;
+let currentLevel = 1;
+let distanceRun = 0;
+const LEVEL_DISTANCE_GOAL = 1800; // Meters to reach the Victory Gate (Final!)
+
+let highScore = parseInt(localStorage.getItem('cyber_forest_grand_highscore')) || 0;
 let gameSpeed = 38; // Z-axis speed
 const MAX_SPEED = 82;
-let distanceRun = 0;
 let obstacleTimer = 0;
-let nextObstacleTime = 1.6; // Spawning interval in seconds
+let nextObstacleTime = 1.6; 
 let coinGroupTimer = 0;
-let fruitTimer = 0; // Spawning interval for 3D fruits
+let fruitTimer = 0; 
 let cameraShake = 0;
 
 // Entities
 let player;
 let obstacles = [];
 let coins = [];
-let fruits = []; // 3D Collectible Fruits!
+let fruits = []; 
 let hoverCars = [];
 let birds = [];
 let trees = [];
+let lampposts = []; // Neon Lampposts flanking the runway (Yonbosh svetlar!)
 let clouds = [];
 let pollen = [];
 let particles = [];
+let victoryGate = null; // Finish Gate (Final!)
 let groundPath;
 let massiveFloor;
+
+// Lights
+let ambientLight, sunLight, skyLight;
 
 // Bounding lane coordinates (3 Lanes: Left, Center, Right)
 const LANE_WIDTH = 2.2;
@@ -70,11 +91,13 @@ const COLOR_GOLD = 0xffbe0b;
 const COLOR_RED = 0xff3333;
 const COLOR_CHERRY = 0xff0033;
 
-// Vibrant Sky & Sunlit Mist
+// Vibrant Sky & Sunlit Mist Themes
 const COLOR_SKY_BLUE = 0x5fa9f8;
 const COLOR_SUN_MIST = 0x9ed2ff;
 
 highScoreEl.textContent = String(highScore).padStart(5, '0');
+hudCoins.textContent = '000';
+hudLevel.textContent = '1';
 
 function initThree() {
     // 1. Create Scene with Beautiful Blue Sky & Light Sunlit Mist
@@ -94,14 +117,14 @@ function initThree() {
     renderer.shadowMap.enabled = true;
 
     // 4. Warm Day Lights (Daylight Sun)
-    const ambientLight = new THREE.AmbientLight(0xeef6ff, 0.95);
+    ambientLight = new THREE.AmbientLight(0xeef6ff, 0.95);
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
+    sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
     sunLight.position.set(15, 45, 15);
     scene.add(sunLight);
 
-    const skyLight = new THREE.DirectionalLight(0xaad3ff, 0.6);
+    skyLight = new THREE.DirectionalLight(0xaad3ff, 0.6);
     skyLight.position.set(-15, 20, -10);
     scene.add(skyLight);
 
@@ -117,7 +140,10 @@ function initThree() {
     // 8. Generate 3D Trees, Rocks, Flowers & Pollen (Daraxt, Tosh va Gullar!)
     create3DForest();
 
-    // 9. Instantiate Upgraded 3D Space Ninja Player (Dynamic Cape!)
+    // 9. Generate Neon Lampposts on Path Sides (Yonboshda neon svetlar!)
+    createNeonLampposts();
+
+    // 10. Instantiate Upgraded 3D Space Ninja Player (Dynamic Cape, Drop Shadow!)
     player = new Player3D();
 }
 
@@ -153,7 +179,6 @@ function createForestPath() {
     pctx.fillStyle = '#112c1b';
     pctx.fillRect(0, 0, 128, 128);
     
-    // Earthy dirt center path
     pctx.fillStyle = '#3d2b1f';
     pctx.fillRect(25, 0, 78, 128);
     
@@ -252,7 +277,6 @@ function create3DForest() {
     const leavesMat2 = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.85, flatShading: true });
     const sunlitLeavesMat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.85, flatShading: true });
 
-    // Stylized low-poly gray rocks
     const rockGeo = new THREE.DodecahedronGeometry(1.0, 0);
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x7c858b, roughness: 0.8, metalness: 0.2, flatShading: true });
 
@@ -317,7 +341,7 @@ function create3DForest() {
             treeGroup.add(rock);
         }
 
-        // 4. Add 2-3 procedurally modeled 3D Flowers next to tree/rocks (Fut/Gul ham bo'lsin!)
+        // 4. Add 2-3 procedurally modeled 3D Flowers next to tree/rocks (Gul ham bo'lsin!)
         const flowerCount = 2 + Math.floor(Math.random() * 2);
         for (let f = 0; f < flowerCount; f++) {
             const flowerGroup = new THREE.Group();
@@ -347,7 +371,6 @@ function create3DForest() {
                 flowerGroup.add(petal);
             }
 
-            // Scatter offset near tree base
             const fx = (Math.random() - 0.5) * 3.5;
             const fz = (Math.random() - 0.5) * 3.5;
             flowerGroup.position.set(fx, 0, fz);
@@ -390,6 +413,82 @@ function create3DForest() {
             timeOffset: Math.random() * Math.PI * 2,
             speed: 0.5 + Math.random() * 1.5
         });
+    }
+}
+
+// --- NEON LAMPPOSTS CLASS (Yonboshda neon svetlar!) ---
+class Lamppost3D {
+    constructor(side, z) {
+        this.side = side; // -1: Left flanking, 1: Right flanking
+        this.z = z;
+
+        this.buildPostMesh();
+    }
+
+    buildPostMesh() {
+        this.group = new THREE.Group();
+
+        // 1. Vertical Post Pole
+        const postGeo = new THREE.CylinderGeometry(0.06, 0.08, 4.0, 8);
+        const postMat = new THREE.MeshStandardMaterial({ color: 0x222227, metalness: 0.9, roughness: 0.2 });
+        this.post = new THREE.Mesh(postGeo, postMat);
+        this.post.position.y = 2.0;
+        this.group.add(this.post);
+
+        // 2. Horizontal Arm reaching toward road
+        const armGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8);
+        this.arm = new THREE.Mesh(armGeo, postMat);
+        this.arm.rotation.z = Math.PI / 2;
+        // Reach inward
+        this.arm.position.set(this.side * 0.6, 4.0, 0);
+        this.group.add(this.arm);
+
+        // 3. Glowing neon lamp head bulb
+        const bulbGeo = new THREE.SphereGeometry(0.18, 12, 12);
+        
+        // Colors cycle level colors: Level 1 (Cyan), Level 2 (Pink), Level 3 (Purple)
+        const colors = [COLOR_CYAN, COLOR_PINK, COLOR_PURPLE];
+        const lampColor = colors[(currentLevel - 1) % colors.length];
+
+        const bulbMat = new THREE.MeshStandardMaterial({
+            color: lampColor,
+            emissive: lampColor,
+            emissiveIntensity: 1.5
+        });
+        this.bulb = new THREE.Mesh(bulbGeo, bulbMat);
+        this.bulb.position.set(this.side * 1.2, 3.82, 0);
+        this.group.add(this.bulb);
+
+        // Spawn position
+        this.x = this.side * 5.1; // Exactly flanking path boundary
+        this.group.position.set(this.x, 0, this.z);
+        scene.add(this.group);
+    }
+
+    update(dt) {
+        this.z += gameSpeed * dt;
+        this.group.position.z = this.z;
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        this.group.traverse(node => {
+            if (node.isMesh) {
+                node.geometry.dispose();
+                node.material.dispose();
+            }
+        });
+    }
+}
+
+function createNeonLampposts() {
+    // Generate 12 lampposts lined up along Z
+    const spacing = 40;
+    for (let i = 0; i < 12; i++) {
+        const z = -i * spacing - 20;
+        // Alternating Left / Right posts
+        lampposts.push(new Lamppost3D(-1, z));
+        lampposts.push(new Lamppost3D(1, z));
     }
 }
 
@@ -437,17 +536,17 @@ class Coin3D {
     }
 }
 
-// Spawns 4 coins in a line, very frequently! (Tangalarni ko'paytirish!)
+// Spawns 5 coins in a line, very frequently! (Tangalarni ko'paytirish!)
 function spawnCoinGroup() {
     const lane = Math.floor(Math.random() * 3) - 1;
     const startZ = -280;
     
-    for (let i = 0; i < 4; i++) {
-        coins.push(new Coin3D(lane, startZ - (i * 6.5)));
+    for (let i = 0; i < 5; i++) {
+        coins.push(new Coin3D(lane, startZ - (i * 6.0)));
     }
 }
 
-// --- 3D COLLECTIBLE FRUITS CLASS (Fut/Fruit qo'shish!) ---
+// --- 3D COLLECTIBLE FRUITS CLASS (Fut/Fruit!) ---
 class Fruit3D {
     constructor(lane, z) {
         this.lane = lane;
@@ -460,7 +559,7 @@ class Fruit3D {
     buildFruitMesh() {
         this.group = new THREE.Group();
 
-        // Shiny Red Cherry/Apple (Two red spheres clustered)
+        // Shiny Red Cherry/Apple
         const fruitGeo = new THREE.SphereGeometry(0.24, 8, 8);
         const fruitMat = new THREE.MeshStandardMaterial({
             color: COLOR_CHERRY,
@@ -480,17 +579,17 @@ class Fruit3D {
         this.cherryRight.position.set(0.12, -0.04, 0);
         this.group.add(this.cherryRight);
 
-        // Angled green stem cylinder
+        // Angled green stem
         const stemGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 6);
         const stemMat = new THREE.MeshStandardMaterial({ color: 0x27ae60 });
         
         this.stem = new THREE.Mesh(stemGeo, stemMat);
-        this.stem.rotation.z = Math.PI / 6; // Angled
+        this.stem.rotation.z = Math.PI / 6; 
         this.stem.position.set(0, 0.2, 0);
         this.group.add(this.stem);
 
         const spawnX = LANES[this.lane + 1];
-        this.group.position.set(spawnX, 0.85, this.z); // Hovering height
+        this.group.position.set(spawnX, 0.85, this.z); 
         scene.add(this.group);
     }
 
@@ -498,9 +597,8 @@ class Fruit3D {
         this.z += gameSpeed * dt;
         this.group.position.z = this.z;
 
-        // Slow hover rotation
         this.group.rotation.y += 2.2 * dt;
-        this.group.position.y = 0.85 + Math.sin(time * 4) * 0.08; // Float up/down
+        this.group.position.y = 0.85 + Math.sin(time * 4) * 0.08; 
     }
 
     destroy() {
@@ -584,7 +682,7 @@ class HoverCar3D {
     }
 }
 
-// --- 3D FLAPPING BIRDS CLASS (Qush qo'shish) ---
+// --- ADVANCED 3D FLAPPING TROPICAL BIRDS CLASS (Kush ne chiroyli roq!) ---
 class Bird3D {
     constructor() {
         this.z = -350;
@@ -600,23 +698,54 @@ class Bird3D {
     buildBirdMesh() {
         this.group = new THREE.Group();
 
-        const bodyGeo = new THREE.BoxGeometry(0.3, 0.2, 0.6);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
+        // 1. Sleek cyan tropical bird body pointing forward (Chiroyli qush!)
+        const bodyGeo = new THREE.ConeGeometry(0.2, 0.7, 6);
+        bodyGeo.rotateX(Math.PI / 2); // Point forward
+        const bodyMat = new THREE.MeshStandardMaterial({ 
+            color: COLOR_CYAN, 
+            roughness: 0.5, 
+            flatShading: true,
+            emissive: 0x004488 
+        });
         this.body = new THREE.Mesh(bodyGeo, bodyMat);
         this.group.add(this.body);
 
-        const wingGeo = new THREE.BoxGeometry(0.65, 0.02, 0.25);
-        wingGeo.translate(0.325, 0, 0); 
+        // 2. Glowing yellow beak
+        const beakGeo = new THREE.ConeGeometry(0.06, 0.22, 5);
+        beakGeo.rotateX(Math.PI / 2);
+        const beakMat = new THREE.MeshStandardMaterial({ color: COLOR_GOLD, roughness: 0.1 });
+        this.beak = new THREE.Mesh(beakGeo, beakMat);
+        this.beak.position.set(0, 0, 0.45); // in front
+        this.group.add(this.beak);
 
-        const wingMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.9, flatShading: true });
+        // 3. Elegant trailing neon pink tail feathers (Magical trail!)
+        const tailGeo = new THREE.BoxGeometry(0.05, 0.01, 0.7);
+        tailGeo.translate(0, 0, -0.35); // offset pivot
+        const tailMat = new THREE.MeshStandardMaterial({ color: COLOR_PINK, roughness: 0.9 });
+        
+        this.tailLeft = new THREE.Mesh(tailGeo, tailMat);
+        this.tailLeft.rotation.y = -Math.PI / 12;
+        this.tailLeft.position.set(-0.06, -0.05, -0.32);
+        this.group.add(this.tailLeft);
+
+        this.tailRight = this.tailLeft.clone();
+        this.tailRight.rotation.y = Math.PI / 12;
+        this.tailRight.position.x = 0.06;
+        this.group.add(this.tailRight);
+
+        // 4. Large wing meshes attached at pivot shoulders
+        const wingGeo = new THREE.BoxGeometry(0.7, 0.02, 0.28);
+        wingGeo.translate(0.35, 0, 0); // shift anchor
+
+        const wingMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, flatShading: true });
         
         this.leftWing = new THREE.Mesh(wingGeo, wingMat);
-        this.leftWing.position.set(-0.15, 0, 0);
+        this.leftWing.position.set(-0.1, 0, 0);
         this.group.add(this.leftWing);
 
         this.rightWing = new THREE.Mesh(wingGeo, wingMat);
         this.rightWing.rotation.y = Math.PI; 
-        this.rightWing.position.set(0.15, 0, 0);
+        this.rightWing.position.set(0.1, 0, 0);
         this.group.add(this.rightWing);
 
         this.group.position.set(this.x, this.y, this.z);
@@ -627,17 +756,24 @@ class Bird3D {
         this.z += (gameSpeed + this.speedOffset) * dt;
         this.group.position.z = this.z;
 
-        const flap = Math.sin(time * 15 + this.wingOffset) * 0.72;
+        // Beautiful wings flapping oscillation
+        const flap = Math.sin(time * 15 + this.wingOffset) * 0.75;
         this.leftWing.rotation.z = flap;
         this.rightWing.rotation.z = -flap; 
+
+        // Gentle tail bobbing
+        this.tailLeft.rotation.x = Math.sin(time * 8) * 0.15;
+        this.tailRight.rotation.x = Math.sin(time * 8) * 0.15;
     }
 
     destroy() {
         scene.remove(this.group);
-        this.body.geometry.dispose();
-        this.body.material.dispose();
-        this.leftWing.geometry.dispose();
-        this.rightWing.geometry.dispose();
+        this.group.traverse(node => {
+            if (node.isMesh) {
+                node.geometry.dispose();
+                node.material.dispose();
+            }
+        });
     }
 }
 
@@ -692,7 +828,7 @@ function spawnSparks3D(x, y, z, color) {
     }
 }
 
-// --- 3D SPACE NINJA PLAYER WITH CYBER KATANA, DUAL JETPACKS & STRIPED CAPE ---
+// --- 3D SPACE NINJA PLAYER WITH KATANA, JETPACKS, CAPE & DROP SHADOW! (Soya!) ---
 class Player3D {
     constructor() {
         this.group = new THREE.Group();
@@ -704,7 +840,6 @@ class Player3D {
         this.gravity = -54; 
         this.jumpForce = 21.5;
         
-        // Lane settings
         this.currentLane = 0; 
         this.targetX = 0;
         this.laneSpeed = 16; 
@@ -719,7 +854,20 @@ class Player3D {
         this.height = 1.6;
         this.depth = 1.0;
 
+        // Build Ninja Mesh structures
         this.buildSpaceNinjaMesh();
+
+        // 7. Dynamic Drop Shadow circle under player flat on grass (Soya ham bo'lsin!)
+        const shadowGeo = new THREE.RingGeometry(0.01, 0.42, 16);
+        const shadowMat = new THREE.MeshBasicMaterial({
+            color: 0x030604, 
+            transparent: true, 
+            opacity: 0.5, 
+            side: THREE.DoubleSide 
+        });
+        this.shadow = new THREE.Mesh(shadowGeo, shadowMat);
+        this.shadow.rotation.x = -Math.PI / 2; // Flat
+        scene.add(this.shadow);
     }
 
     buildSpaceNinjaMesh() {
@@ -957,10 +1105,98 @@ class Player3D {
             const waveAngle = Math.sin(this.animTime * 1.6) * 0.15;
             this.capeGroup.rotation.x = baseDragAngle + waveAngle;
         }
+
+        // 8. Update real-time Flat shadow position and scale (Soya ham bo'lsin!)
+        if (this.shadow) {
+            this.shadow.position.set(this.group.position.x, 0.03, this.group.position.z);
+            
+            // Fades and scales down with height
+            const heightRatio = Math.max(0, 1 - (this.y - 0.1) * 0.08);
+            this.shadow.scale.set(heightRatio, heightRatio, heightRatio);
+            this.shadow.material.opacity = 0.5 * heightRatio;
+        }
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        scene.remove(this.shadow);
     }
 }
 
-// --- 3D OBSTACLE CLASS FOR LEFT/RIGHT/CENTER LANES ---
+// --- 3D VICTORY FINISH GATE CLASS (Final / Level Completed!) ---
+class VictoryGate3D {
+    constructor(z) {
+        this.z = z;
+        this.buildGateMesh();
+    }
+
+    buildGateMesh() {
+        this.group = new THREE.Group();
+
+        // 1. Two large neon arch support pillars
+        const pillarGeo = new THREE.CylinderGeometry(0.3, 0.4, 6.0, 8);
+        const pillarMat = new THREE.MeshStandardMaterial({ 
+            color: COLOR_GREEN, 
+            emissive: COLOR_GREEN, 
+            emissiveIntensity: 1.0 
+        });
+
+        this.pillarLeft = new THREE.Mesh(pillarGeo, pillarMat);
+        this.pillarLeft.position.set(-LANE_WIDTH - 1.2, 3.0, 0);
+        this.group.add(this.pillarLeft);
+
+        this.pillarRight = this.pillarLeft.clone();
+        this.pillarRight.position.x = LANE_WIDTH + 1.2;
+        this.group.add(this.pillarRight);
+
+        // 2. Large horizontal glowing header beam with gold warning trim
+        const beamGeo = new THREE.BoxGeometry(7.0, 0.6, 0.6);
+        const beamMat = new THREE.MeshStandardMaterial({ 
+            color: COLOR_CYAN, 
+            emissive: COLOR_CYAN, 
+            emissiveIntensity: 1.2 
+        });
+        
+        this.header = new THREE.Mesh(beamGeo, beamMat);
+        this.header.position.set(0, 6.0, 0);
+        this.group.add(this.header);
+
+        // 3. Huge Glowing "FINISH" floating core
+        const coreGeo = new THREE.BoxGeometry(3.5, 0.8, 0.1);
+        const coreMat = new THREE.MeshStandardMaterial({ 
+            color: COLOR_GOLD, 
+            emissive: COLOR_GOLD, 
+            emissiveIntensity: 1.8 
+        });
+        this.core = new THREE.Mesh(coreGeo, coreMat);
+        this.core.position.set(0, 5.0, 0);
+        this.group.add(this.core);
+
+        this.group.position.set(0, 0, this.z);
+        scene.add(this.group);
+    }
+
+    update(dt) {
+        // Scrolls backward just like normal scenery
+        this.z += gameSpeed * dt;
+        this.group.position.z = this.z;
+        
+        // Glow pulsation
+        this.core.material.emissiveIntensity = 1.2 + Math.sin(clock.getElapsedTime() * 12) * 0.6;
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        this.group.traverse(node => {
+            if (node.isMesh) {
+                node.geometry.dispose();
+                node.material.dispose();
+            }
+        });
+    }
+}
+
+// --- 3D OBSTACLE CLASS ---
 class Obstacle3D {
     constructor() {
         this.z = -280; 
@@ -1087,7 +1323,6 @@ function checkCollision3D(p, o) {
     }
 }
 
-// Check overlapping with coins/fruits
 function checkCoinCollision(p, c) {
     const pZ = p.group.position.z;
     const pX = p.group.position.x;
@@ -1108,10 +1343,56 @@ function checkFruitCollision(p, f) {
 
     const fX = LANES[f.lane + 1];
     const fZ = f.z;
-    const fY = f.group.position.y; // floating height
+    const fY = f.group.position.y; 
 
     const dist = Math.sqrt((pX - fX)**2 + (pY + 0.8 - fY)**2 + (pZ - fZ)**2);
-    return dist < 1.15; // overlap radius
+    return dist < 1.15; 
+}
+
+// --- VISUAL DAY-NIGHT CYCLES TRANSITION (Kechqurun ham bo'lsin!) ---
+function transitionLevelTheme(level) {
+    if (!scene) return;
+
+    // Cycle 3 gorgeous environments: Day, Sunset (Kechqurun), Cyber Night (Tungi)
+    if (level === 1) {
+        // Level 1: Sunlit Day Blue
+        scene.background.setHex(COLOR_SKY_BLUE);
+        scene.fog.color.setHex(COLOR_SUN_MIST);
+        if (ambientLight) ambientLight.color.setHex(0xeef6ff);
+        if (sunLight) sunLight.color.setHex(0xffffff);
+        if (massiveFloor) massiveFloor.material.color.setHex(0x143c1a); // Lush Meadow
+    } 
+    
+    else if (level === 2) {
+        // Level 2: Warm Evening Sunset / Kechqurun (Orange/Pink sky gradient feel)
+        scene.background.setHex(0xff7e5f); // sunset orange
+        scene.fog.color.setHex(0xfeb47b);
+        if (ambientLight) ambientLight.color.setHex(0xffdfc4); // warm light
+        if (sunLight) sunLight.color.setHex(0xffaa66); // deep orange sun
+        if (massiveFloor) massiveFloor.material.color.setHex(0x382c16); // Golden sunset earth
+    } 
+    
+    else {
+        // Level 3: Cyber Night / Tungi O'rmon (Deep purple/green neon cyberglow)
+        scene.background.setHex(0x0b001a); // Deep dark purple
+        scene.fog.color.setHex(0x1a0f2e);
+        if (ambientLight) ambientLight.color.setHex(0x3a0066); // purple skyglow
+        if (sunLight) sunLight.color.setHex(COLOR_CYAN); // neon headlights
+        if (massiveFloor) massiveFloor.material.color.setHex(0x060f08); // Dark cyber grass
+    }
+
+    // Refresh Lampposts bulb neon colors to match theme
+    const colors = [COLOR_CYAN, COLOR_PINK, COLOR_PURPLE];
+    const lampColor = colors[(level - 1) % colors.length];
+    
+    lampposts.forEach(lp => {
+        if (lp.bulb) {
+            lp.bulb.material.color.setHex(lampColor);
+            lp.bulb.material.emissive.setHex(lampColor);
+        }
+    });
+
+    hudLevel.textContent = level;
 }
 
 // --- INPUT TRIGGERS ---
@@ -1139,7 +1420,6 @@ function startSlide() {
     }
 }
 
-// Emulation bindings
 function stopSlide() {
     if (gameState === 'PLAYING') {
         player.slide(false);
@@ -1172,12 +1452,14 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
+// Upgraded 4 mobile touchscreen click/touch bindings
 mobileLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); steerLeft(); });
 mobileRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); steerRight(); });
 mobileJumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
 mobileSlideBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startSlide(); });
 mobileSlideBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopSlide(); });
 
+// Mouse support
 mobileLeftBtn.addEventListener('mousedown', (e) => { e.preventDefault(); steerLeft(); });
 mobileRightBtn.addEventListener('mousedown', (e) => { e.preventDefault(); steerRight(); });
 mobileJumpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); triggerJump(); });
@@ -1192,14 +1474,21 @@ function init() {
     hoverCars.forEach(hc => hc.destroy());
     birds.forEach(b => b.destroy());
     particles.forEach(p => p.destroy());
+    if (victoryGate) {
+        victoryGate.destroy();
+        victoryGate = null;
+    }
     
     score = 0;
-    gameSpeed = 38;
+    coinsCollected = 0;
     distanceRun = 0;
+    gameSpeed = 38 + (currentLevel - 1) * 8; // escalate starting speed per level!
+    
     obstacleTimer = 0;
     coinGroupTimer = 0;
     fruitTimer = 0;
     cameraShake = 0;
+    
     obstacles = [];
     coins = [];
     fruits = [];
@@ -1217,7 +1506,12 @@ function init() {
     player.slide(false);
 
     currentScoreEl.textContent = '00000';
+    hudCoins.textContent = '000';
+    hudLevel.textContent = currentLevel;
     comboText.textContent = '1.0x';
+
+    // Set level environment colors
+    transitionLevelTheme(currentLevel);
 }
 
 function startGame() {
@@ -1226,7 +1520,52 @@ function startGame() {
     
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
+    victoryScreen.classList.add('hidden');
     hud.classList.remove('hidden');
+}
+
+// Victory Level Completed flow (Final!)
+function triggerLevelVictory() {
+    gameState = 'VICTORY';
+    
+    // Spawn massive multi-color celebration fireworks!
+    const colors = [COLOR_GREEN, COLOR_CYAN, COLOR_PINK, COLOR_GOLD];
+    for (let f = 0; f < 6; f++) {
+        setTimeout(() => {
+            const rx = player.group.position.x + (Math.random() - 0.5) * 8;
+            const ry = 2.0 + Math.random() * 4;
+            const rz = player.group.position.z - 5 - Math.random() * 10;
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            for (let i = 0; i < 35; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 16 + 4;
+                const vx = Math.cos(angle) * speed;
+                const vy = (Math.random() - 0.5) * 12;
+                const vz = Math.sin(angle) * speed;
+                particles.push(new Particle3D(
+                    rx, ry, rz,
+                    vx, vy, vz,
+                    randomColor, 0.16, 0.8
+                ));
+            }
+            cameraShake = 0.6;
+        }, f * 350);
+    }
+
+    victoryLevelEl.textContent = currentLevel;
+    victoryCoinsEl.textContent = coinsCollected;
+    victoryScoreEl.textContent = Math.floor(score);
+
+    // Fade to victory screen
+    setTimeout(() => {
+        victoryScreen.classList.remove('hidden');
+    }, 1800);
+}
+
+function loadNextLevel() {
+    currentLevel++;
+    startGame();
 }
 
 function gameOver() {
@@ -1241,10 +1580,11 @@ function gameOver() {
 
     const finalScore = Math.floor(score);
     finalScoreEl.textContent = finalScore;
+    finalCoinsEl.textContent = coinsCollected;
     
     if (finalScore > highScore) {
         highScore = finalScore;
-        localStorage.setItem('cyber_forest_deluxe_highscore', highScore);
+        localStorage.setItem('cyber_forest_grand_highscore', highScore);
         highScoreEl.textContent = String(highScore).padStart(5, '0');
         newRecordTag.classList.remove('hidden');
     } else {
@@ -1253,6 +1593,9 @@ function gameOver() {
     
     bestScoreEl.textContent = highScore;
     
+    // Reset back to level 1 for complete restart
+    currentLevel = 1;
+
     setTimeout(() => {
         gameOverScreen.classList.remove('hidden');
     }, 600);
@@ -1261,6 +1604,7 @@ function gameOver() {
 // UI Buttons Connect
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
+nextLevelBtn.addEventListener('click', loadNextLevel);
 
 // --- MAIN 3D VALLEY MEADOW GAMELOOP ---
 function tick() {
@@ -1284,7 +1628,17 @@ function tick() {
             }
         });
 
-        // 3. Parallax drifting Clouds loop
+        // 3. Parallax neon lampposts loop (Yonboshda neon svetlar!)
+        lampposts.forEach(lp => {
+            lp.update(dt);
+            if (lp.z > 25) {
+                // Recycle way back
+                lp.z = -450;
+                lp.group.position.z = -450;
+            }
+        });
+
+        // 4. Parallax drifting Clouds loop
         clouds.forEach(c => {
             c.mesh.position.z += gameSpeed * 0.42 * dt * c.speed;
             
@@ -1295,7 +1649,7 @@ function tick() {
             }
         });
 
-        // 4. Drift golden sunlit pollen
+        // 5. Drift golden sunlit pollen
         pollen.forEach(p => {
             p.mesh.position.z += gameSpeed * 0.45 * dt;
             p.mesh.position.x += Math.sin(time * p.speed + p.timeOffset) * 0.035;
@@ -1308,12 +1662,12 @@ function tick() {
             }
         });
 
-        // 5. Spawning flying hover-cars periodically
+        // 6. Spawning flying hover-cars periodically
         if (Math.random() < 0.008) {
             hoverCars.push(new HoverCar3D());
         }
 
-        // 6. Update Hover-Cars
+        // 7. Update Hover-Cars
         for (let i = hoverCars.length - 1; i >= 0; i--) {
             const hc = hoverCars[i];
             hc.update(dt);
@@ -1323,12 +1677,12 @@ function tick() {
             }
         }
 
-        // 7. Spawning flapping birds periodically
-        if (Math.random() < 0.005) {
+        // 8. Spawning flapping tropical birds periodically (Chiroyli qush!)
+        if (Math.random() < 0.006) {
             birds.push(new Bird3D());
         }
 
-        // 8. Update flapping birds
+        // 9. Update flapping birds
         for (let i = birds.length - 1; i >= 0; i--) {
             const b = birds[i];
             b.update(dt, time);
@@ -1338,20 +1692,25 @@ function tick() {
             }
         }
 
-        // 9. Spawning abundant gold coins! Every 2.2 seconds! (Tangalarni ko'paytirish!)
+        // 10. Spawning abundant gold coins! Every 1.65 seconds! (Tangani ko'paytirish!)
         coinGroupTimer += dt;
-        if (coinGroupTimer >= 2.2) {
+        if (coinGroupTimer >= 1.65 && distanceRun < LEVEL_DISTANCE_GOAL - 100) {
             spawnCoinGroup();
             coinGroupTimer = 0;
         }
 
-        // 10. Update and Collide Gold Coins
+        // 11. Update and Collide Gold Coins (Tangani sanaydigan narsa!)
         for (let i = coins.length - 1; i >= 0; i--) {
             const c = coins[i];
             c.update(dt);
 
             if (checkCoinCollision(player, c)) {
                 c.collected = true;
+                
+                // Track coins and update coin counter
+                coinsCollected++;
+                hudCoins.textContent = String(coinsCollected).padStart(3, '0');
+                
                 score += 50; 
                 
                 for (let k = 0; k < 8; k++) {
@@ -1377,24 +1736,23 @@ function tick() {
             }
         }
 
-        // 11. Spawning 3D Collectible Fruits (Cherries/Apples) every 3.5 seconds! (Fut/Fruit qo'shish!)
+        // 12. Spawning 3D Collectible Fruits (Cherries/Apples)
         fruitTimer += dt;
-        if (fruitTimer >= 3.5) {
+        if (fruitTimer >= 3.5 && distanceRun < LEVEL_DISTANCE_GOAL - 100) {
             const lane = Math.floor(Math.random() * 3) - 1;
             fruits.push(new Fruit3D(lane, -280));
             fruitTimer = 0;
         }
 
-        // 12. Update and Collide 3D Fruits
+        // 13. Update and Collide 3D Fruits
         for (let i = fruits.length - 1; i >= 0; i--) {
             const f = fruits[i];
             f.update(dt, time);
 
             if (checkFruitCollision(player, f)) {
                 f.collected = true;
-                score += 150; // Premium bonus score!
+                score += 150; 
                 
-                // Explode in highly glowing pink/magenta sparks!
                 for (let k = 0; k < 12; k++) {
                     particles.push(new Particle3D(
                         f.group.position.x,
@@ -1418,15 +1776,15 @@ function tick() {
             }
         }
 
-        // 13. Spawning obstacles
+        // 14. Spawning obstacles
         obstacleTimer += dt;
-        if (obstacleTimer >= nextObstacleTime) {
+        if (obstacleTimer >= nextObstacleTime && distanceRun < LEVEL_DISTANCE_GOAL - 150) {
             obstacles.push(new Obstacle3D());
             obstacleTimer = 0;
             nextObstacleTime = Math.max(0.6, 1.7 - (gameSpeed * 0.014) + Math.random() * 0.35);
         }
 
-        // 14. Update Obstacles
+        // 15. Update Obstacles
         for (let i = obstacles.length - 1; i >= 0; i--) {
             const o = obstacles[i];
             o.update(dt);
@@ -1452,20 +1810,43 @@ function tick() {
             }
         }
 
-        // 15. Update Player
+        // 16. Spawn Finish Victory Gate when distance limit reached! (Final!)
+        if (distanceRun >= LEVEL_DISTANCE_GOAL && !victoryGate) {
+            victoryGate = new VictoryGate3D(-280);
+        }
+
+        // 17. Update and trigger Victory Gate collision
+        if (victoryGate) {
+            victoryGate.update(dt);
+            
+            // Check if player passes through the gate
+            if (victoryGate.z >= player.group.position.z) {
+                triggerLevelVictory();
+            }
+        }
+
+        // 18. Update Player
         player.update(dt);
 
-        // 16. Accelerate runner
-        distanceRun += dt;
+        // 19. Accelerate runner
+        distanceRun += gameSpeed * dt * 0.25; // in virtual meters
         score += dt * 18;
         if (gameSpeed < MAX_SPEED) {
             gameSpeed += 0.28 * dt;
         }
 
         currentScoreEl.textContent = String(Math.floor(score)).padStart(5, '0');
+    } 
+    
+    else if (gameState === 'VICTORY') {
+        // Slow down and let player pass through gate
+        if (victoryGate) {
+            victoryGate.update(dt * 0.2);
+        }
+        player.update(dt * 0.25);
     }
 
-    // 17. Particle engine update
+    // 20. Particle engine update
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.update(dt);
@@ -1475,7 +1856,7 @@ function tick() {
         }
     }
 
-    // 18. Camera Follow
+    // 21. Camera Follow
     if (player) {
         const targetCamY = player.isSliding ? 2.8 : 4.2 + (player.y - 0.1) * 0.4;
         camera.position.y += (targetCamY - camera.position.y) * 0.1;
