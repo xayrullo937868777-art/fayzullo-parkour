@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cyber Parkour | Neon Runner</title>
-    <meta name="description" content="Kiberpank uslubidagi dinamik va yuqori tezlikdagi neon parkur o'yini.">
+    <title>Cyber Parkour 3D | Neon Runner</title>
+    <meta name="description" content="Kiberpank uslubidagi dinamik va yuqori tezlikdagi 3D neon parkur o'yini.">
     <!-- Google Fonts for Futuristic Gaming Look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,10 +12,12 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <!-- Three.js CDN for Breathtaking 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div class="game-container">
-        <!-- Game Canvas -->
+        <!-- Game Canvas (Three.js will render WebGL inside this container) -->
         <canvas id="gameCanvas"></canvas>
 
         <!-- Dynamic Game Dashboard (In-game UI) -->
@@ -36,8 +38,8 @@
         <!-- Glassmorphic Start Screen Overlay -->
         <div class="overlay" id="startScreen">
             <div class="menu-card animate-glow">
-                <h1 class="game-title">CYBER<span class="neon-pink">PARKOUR</span></h1>
-                <p class="game-subtitle">NEON RUNNER v1.0</p>
+                <h1 class="game-title">CYBER<span class="neon-pink">PARKOUR 3D</span></h1>
+                <p class="game-subtitle">NEON RUNNER v2.0</p>
                 
                 <div class="instructions-card">
                     <h3><i class="fas fa-gamepad"></i> BOSHQARISH TARTIBI:</h3>
@@ -55,7 +57,7 @@
                 </div>
 
                 <button class="btn btn-primary" id="startBtn">
-                    <i class="fas fa-play"></i> O'YINNI BOSHLASH
+                    <i class="fas fa-play"></i> O'YINNI BOSHLASH (3D)
                 </button>
             </div>
         </div>
