@@ -2,7 +2,7 @@
  * Cyber City Parkour 3D - Breathtaking 3D WebGL Neon Runner
  * Valley Arcade Grand City Edition: Endless Dark Grid Ground, Glowing Side Neon Lampposts,
  * Procedural Skyscrapers & Apartment Blocks (Domlar!) with glowing window grids,
- * Advanced Polyphonic 8-Bit Retro BGM & SFX Sound Engine (Muzika ham bo'lsin!),
+ * Heavily Synthesized Brazilian Phonk Sound Engine (DJ V12 – FUNK ABNORMAL SUPER SLOWED!),
  * Flying Jetpack Power-Up Mystery Box (Uchadigan Quti!), Sky Coins,
  * Sleek Oncoming Obstacles (Spinning Plasma Mines, Cyber Laser Warning Arches, Holographic Forcefields),
  * Cyber Katana, Dual Jetpacks, Abundant Gold Coins, 3D Collectible Fruits/Cherries, 
@@ -50,7 +50,7 @@ const mobileRightBtn = document.getElementById('mobileRightBtn');
 const mobileSlideBtn = document.getElementById('mobileSlideBtn');
 const mobileJumpBtn = document.getElementById('mobileJumpBtn');
 
-// --- SYNTHESIZED ADVANCED POLYPHONIC RETRO ARCADE SOUND ENGINE ---
+// --- SYNTHESIZED BRAZILIAN PHONK SOUND ENGINE (DJ V12 - FUNK ABNORMAL SUPER SLOWED!) ---
 class ArcadeSoundEngine {
     constructor() {
         this.ctx = null;
@@ -59,33 +59,27 @@ class ArcadeSoundEngine {
         
         // Loop timeline parameters
         this.bgmInterval = null;
-        this.tempo = 142; // Upbeat tempo!
+        this.tempo = 88; // Slowed heavy Phonk tempo! (SUPER SLOWED)
         this.noteIndex = 0;
         
-        // Polyphonic sound channels: Bass, Chord pads, Hi-hat, and Lead melodies!
-        this.bassSequence = [
-            65.41,  98.00,  130.81, 98.00,  // C2, G2, C3, G2
-            77.78,  116.54, 155.56, 116.54, // Eb2, Bb2, Eb3, Bb2
-            87.31,  130.81, 174.61, 130.81, // F2, C3, F3, C3
-            98.00,  146.83, 196.00, 146.83  // G2, D3, G3, D3
+        // Dark, heavy Phonk cowbell melody sequence (Iconic Funk Abnormal riff!)
+        this.phonkCowbellMelody = [
+            440.00, 440.00, 523.25, 440.00, // A4, A4, C5, A4
+            587.33, 440.00, 622.25, 587.33, // D5, A4, D#5, D5
+            523.25, 523.25, 587.33, 523.25, // C5, C5, D5, C5
+            493.88, 493.88, 440.00, 392.00  // B4, B4, A4, G4
         ];
         
-        this.chordSequence = [
-            [130.81, 155.56, 196.00], // C-Minor chord swell (C3+Eb3+G3)
-            [130.81, 155.56, 196.00],
-            [155.56, 196.00, 233.08], // Eb-Major chord swell (Eb3+G3+Bb3)
-            [155.56, 196.00, 233.08],
-            [174.61, 207.65, 261.63], // F-Minor chord swell (F3+Ab3+C4)
-            [174.61, 207.65, 261.63],
-            [196.00, 246.94, 293.66], // G-Major chord swell (G3+B3+D4)
-            [196.00, 246.94, 293.66]
-        ];
-
-        this.leadSequence = [
-            523.25, 587.33, 659.25, 783.99, // C5, D5, E5, G5
-            880.00, 783.99, 659.25, 587.33, // A5, G5, E5, D5
-            698.46, 783.99, 880.00, 1046.50, // F5, G5, A5, C6
-            1174.66, 1046.50, 880.00, 783.99 // D6, C6, A5, G5
+        // Slide-boosted deep 808 Phonk sub-bass frequencies (Phonk Bass Slides!)
+        this.phonkBassSlides = [
+            { s: 110.00, e: 55.00 }, // A2 -> A1 heavy slide!
+            { s: 110.00, e: 55.00 },
+            { s: 130.81, e: 65.41 }, // C3 -> C2 heavy slide!
+            { s: 130.81, e: 65.41 },
+            { s: 98.00,  e: 49.00 },  // G2 -> G1 heavy slide!
+            { s: 98.00,  e: 49.00 },
+            { s: 82.41,  e: 41.20 },  // E2 -> E1 heavy slide!
+            { s: 82.41,  e: 41.20 }
         ];
     }
 
@@ -99,29 +93,23 @@ class ArcadeSoundEngine {
         if (this.isPlaying || this.isMuted) return;
         this.isPlaying = true;
 
-        const noteLength = 60 / this.tempo / 2; // Eighth notes
+        const noteLength = 60 / this.tempo / 2; // Eighth notes at 88 BPM
         this.bgmInterval = setInterval(() => {
             if (!this.isPlaying || this.isMuted) return;
             
-            const bassFreq = this.bassSequence[this.noteIndex % this.bassSequence.length];
-            this.playSynthesizedTone(bassFreq, 'triangle', noteLength * 0.95, 0.16);
-
-            if (this.noteIndex % 4 === 0) {
-                const chord = this.chordSequence[Math.floor(this.noteIndex / 4) % this.chordSequence.length];
-                chord.forEach(freq => {
-                    this.playSynthesizedTone(freq, 'sine', noteLength * 3.6, 0.04);
-                });
-            }
-
-            // Upbeat hi-hat white noise click emulation (Hi-hat beats!)
-            if (this.noteIndex % 2 === 1) {
-                this.playHiHatSFX(noteLength * 0.25);
-            }
-
-            // High heroic retro lead arpeggio sequence
+            // 1. Play Heavy sliding 808 sub-bass on alternate beats (Massive bass!)
             if (this.noteIndex % 2 === 0) {
-                const leadFreq = this.leadSequence[Math.floor(this.noteIndex / 2) % this.leadSequence.length];
-                this.playSynthesizedTone(leadFreq, 'square', noteLength * 0.75, 0.06);
+                const bassSlide = this.phonkBassSlides[Math.floor(this.noteIndex / 2) % this.phonkBassSlides.length];
+                this.playSliding808Bass(bassSlide.s, bassSlide.e, noteLength * 1.9, 0.42);
+            }
+
+            // 2. Play iconic metallic Phonk Cowbell arpeggio melody
+            const cowbellFreq = this.phonkCowbellMelody[this.noteIndex % this.phonkCowbellMelody.length];
+            this.playPhonkCowbell(cowbellFreq, noteLength * 0.85, 0.16);
+
+            // 3. Play sharp high-frequency hi-hat click on every off-beat
+            if (this.noteIndex % 2 === 1) {
+                this.playPhonkHiHat(noteLength * 0.22);
             }
 
             this.noteIndex++;
@@ -155,33 +143,75 @@ class ArcadeSoundEngine {
         }
     }
 
-    playSynthesizedTone(frequency, type, duration, volume) {
+    // Heavy Phonk cowbell synth: Combines dual square waves with a bandpass filter
+    playPhonkCowbell(freq, duration, volume) {
+        if (!this.ctx || this.isMuted) return;
+        
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gainNode = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        
+        osc1.type = 'square';
+        osc2.type = 'square';
+        
+        // Characteristic metallic disharmonious tuning ratios
+        osc1.frequency.setValueAtTime(freq * 1.48, this.ctx.currentTime);
+        osc2.frequency.setValueAtTime(freq * 2.22, this.ctx.currentTime);
+        
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(freq * 1.82, this.ctx.currentTime);
+        filter.Q.setValueAtTime(3.5, this.ctx.currentTime);
+        
+        gainNode.gain.setValueAtTime(volume, this.ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.ctx.destination);
+        
+        osc1.start();
+        osc2.start();
+        osc1.stop(this.ctx.currentTime + duration);
+        osc2.stop(this.ctx.currentTime + duration);
+    }
+
+    // Heavy sliding 808 Phonk sub-bass synth
+    playSliding808Bass(startFreq, endFreq, duration, volume) {
         if (!this.ctx || this.isMuted) return;
         
         const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const gainNode = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
         
-        osc.type = type;
-        osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+        // Signature sliding frequency drop!
+        osc.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + duration * 0.82);
         
-        gain.gain.setValueAtTime(volume, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(135, this.ctx.currentTime); // Heavy sub-bass filter
         
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gainNode.gain.setValueAtTime(volume, this.ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        
+        osc.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.ctx.destination);
         
         osc.start();
         osc.stop(this.ctx.currentTime + duration);
     }
 
-    playHiHatSFX(duration) {
+    playPhonkHiHat(duration) {
         if (!this.ctx || this.isMuted) return;
         
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(10000, this.ctx.currentTime); // High pitch click
+        osc.frequency.setValueAtTime(9000, this.ctx.currentTime); 
         
         gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
@@ -240,9 +270,30 @@ class ArcadeSoundEngine {
         this.init();
         if (this.isMuted) return;
         
-        this.playSynthesizedTone(1318.51, 'square', 0.06, 0.08); // E6
+        // Sweet high chime (Coin arpeggio)
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime); // E6
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.06);
+
         setTimeout(() => {
-            this.playSynthesizedTone(1975.53, 'square', 0.14, 0.08); // B6
+            if (this.isMuted) return;
+            const osc2 = this.ctx.createOscillator();
+            const gain2 = this.ctx.createGain();
+            osc2.type = 'square';
+            osc2.frequency.setValueAtTime(1975.53, this.ctx.currentTime); // B6
+            gain2.gain.setValueAtTime(0.08, this.ctx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.14);
+            osc2.connect(gain2);
+            gain2.connect(this.ctx.destination);
+            osc2.start();
+            osc2.stop(this.ctx.currentTime + 0.14);
         }, 65);
     }
 
@@ -253,7 +304,16 @@ class ArcadeSoundEngine {
         const arpeggio = [523.25, 659.25, 783.99, 1046.50]; 
         arpeggio.forEach((freq, i) => {
             setTimeout(() => {
-                this.playSynthesizedTone(freq, 'square', 0.15, 0.06);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
             }, i * 55);
         });
     }
@@ -262,11 +322,19 @@ class ArcadeSoundEngine {
         this.init();
         if (this.isMuted) return;
         
-        // Epic hyper pitch rise arpeggio (Mystery Box fly SFX!)
         const flightChime = [440, 554.37, 659.25, 880, 1109.73, 1318.51, 1760];
         flightChime.forEach((freq, i) => {
             setTimeout(() => {
-                this.playSynthesizedTone(freq, 'square', 0.18, 0.09);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.09, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.18);
             }, i * 45);
         });
     }
@@ -278,7 +346,16 @@ class ArcadeSoundEngine {
         const chords = [587.33, 739.99, 880.00, 1174.66]; 
         chords.forEach((freq, i) => {
             setTimeout(() => {
-                this.playSynthesizedTone(freq, 'square', 0.25, 0.08);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
             }, i * 65);
         });
     }
@@ -317,7 +394,16 @@ class ArcadeSoundEngine {
         let cumulativeDelay = 0;
         notes.forEach(n => {
             setTimeout(() => {
-                this.playSynthesizedTone(n.f, 'square', n.d, 0.12);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(n.f, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + n.d);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + n.d);
             }, cumulativeDelay);
             cumulativeDelay += n.d * 1000 + 40;
         });
@@ -360,6 +446,7 @@ let player;
 let obstacles = [];
 let coins = [];
 let fruits = []; 
+let powerBoxes = [];
 let hoverCars = [];
 let birds = [];
 let buildings = []; // Skyscrapers & Domlar flanking cyber highway!
@@ -790,7 +877,6 @@ class PowerBox3D {
     buildBoxMesh() {
         this.group = new THREE.Group();
 
-        // 1. Sleek glassmorphic cyan neon box frame
         const frameGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55);
         const frameMat = new THREE.MeshStandardMaterial({
             color: COLOR_CYAN,
@@ -801,7 +887,6 @@ class PowerBox3D {
         this.frame = new THREE.Mesh(frameGeo, frameMat);
         this.group.add(this.frame);
 
-        // 2. High-energy gold spinning core
         const coreGeo = new THREE.BoxGeometry(0.24, 0.24, 0.24);
         const coreMat = new THREE.MeshStandardMaterial({
             color: COLOR_GOLD,
@@ -822,7 +907,6 @@ class PowerBox3D {
         this.z += gameSpeed * dt;
         this.group.position.z = this.z;
 
-        // Cool rotating mystery core animations
         this.group.rotation.y += 3.2 * dt;
         this.group.rotation.x += 1.5 * dt;
         this.group.position.y = 0.85 + Math.sin(time * 6) * 0.08;
@@ -842,7 +926,7 @@ class Coin3D {
     constructor(lane, z, height = 0.72) {
         this.lane = lane; 
         this.z = z;
-        this.height = height; // Can spawn high in the sky!
+        this.height = height; 
         this.collected = false;
 
         this.buildCoinMesh();
@@ -892,7 +976,6 @@ function spawnCoinGroup() {
 }
 
 function spawnSkyCoins() {
-    // Spawns a gorgeous double lane track of sky coins during fly mode!
     const lane1 = Math.floor(Math.random() * 3) - 1;
     const startZ = -280;
     for (let i = 0; i < 6; i++) {
@@ -1281,7 +1364,6 @@ class Player3D {
         this.jetpackRight.position.x = 0.25;
         this.group.add(this.jetpackRight);
 
-        // Substantially larger hyper flame cones for fly mode!
         const flameGeo = new THREE.ConeGeometry(0.12, 0.8, 8);
         flameGeo.translate(0, -0.4, 0); 
         const flameMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
@@ -1337,7 +1419,7 @@ class Player3D {
     }
 
     jump() {
-        if (isFlyingMode) return; // Cannot jump during flying
+        if (isFlyingMode) return; 
         
         if (!this.isJumping) {
             this.vy = this.jumpForce;
@@ -1390,20 +1472,17 @@ class Player3D {
 
     update(dt) {
         if (isFlyingMode) {
-            // Flying Mode: Glide player smoothly up to y = 6.2
             this.y += (6.2 - this.y) * 8.5 * dt;
             this.vy = 0;
             this.isJumping = false;
             this.isDoubleJumping = false;
             
-            // Thrust flame fully visible!
             this.flameLeft.visible = true;
             this.flameRight.visible = true;
             const flicker = 1.2 + Math.random() * 0.4;
             this.flameLeft.scale.y = flicker;
             this.flameRight.scale.y = flicker;
             
-            // Spawn continuous engine sparks!
             if (Math.random() < 0.38) {
                 particles.push(new Particle3D(
                     this.group.position.x + (Math.random() - 0.5) * 0.3,
@@ -1416,7 +1495,6 @@ class Player3D {
                 ));
             }
         } else {
-            // Standard runner physics
             this.vy += this.gravity * dt;
             this.y += this.vy * dt;
 
@@ -1465,7 +1543,6 @@ class Player3D {
             this.rightArm.rotation.x = 0.6;
             this.capeGroup.rotation.x = 0.1;
         } else if (isFlyingMode) {
-            // Cool aerial flying pose (legs extended back)
             this.leftLeg.rotation.x = 0.8;
             this.rightLeg.rotation.x = 0.8;
             this.leftArm.rotation.x = -0.4;
@@ -1536,7 +1613,6 @@ class VictoryGate3D {
         this.header.position.set(0, 6.0, 0);
         this.group.add(this.header);
 
-        // Rotating cyber portal ring above Victory gate
         const ringGeo = new THREE.TorusGeometry(2.2, 0.14, 8, 32);
         const ringMat = new THREE.MeshStandardMaterial({
             color: COLOR_PINK,
@@ -1582,7 +1658,7 @@ class VictoryGate3D {
     }
 }
 
-// --- REDESIGNED PRESTIGE OBSTACLES (Plasma Mine, Cyber Warning Arch, Shimmering Forcefield!) ---
+// --- REDESIGNED PRESTIGE OBSTACLES ---
 class Obstacle3D {
     constructor() {
         this.z = -280; 
@@ -1758,7 +1834,7 @@ function checkCoinCollision(p, c) {
 }
 
 function checkFruitCollision(p, f) {
-    if (isFlyingMode) return false; // Fruits spawn only on ground
+    if (isFlyingMode) return false; 
 
     const pZ = p.group.position.z;
     const pX = p.group.position.x;
@@ -1773,7 +1849,7 @@ function checkFruitCollision(p, f) {
 }
 
 function checkPowerBoxCollision(p, pb) {
-    if (isFlyingMode) return false; // Cannot grab while already flying
+    if (isFlyingMode) return false; 
 
     const pZ = p.group.position.z;
     const pX = p.group.position.x;
@@ -2169,7 +2245,6 @@ function tick() {
                 audio.playPowerUpSFX();
                 showAlert("UCHISH QUTISI! JETPACK REAKTIV KUCHI!", "gold");
 
-                // Trigger large cyan booster spark explosions!
                 for (let k = 0; k < 25; k++) {
                     particles.push(new Particle3D(
                         pb.group.position.x,
@@ -2182,7 +2257,6 @@ function tick() {
                     ));
                 }
 
-                // Immediately spawn a track of Sky Coins high up!
                 spawnSkyCoins();
 
                 pb.destroy();
@@ -2200,7 +2274,6 @@ function tick() {
         coinGroupTimer += dt;
         if (coinGroupTimer >= 1.65 && distanceRun < LEVEL_DISTANCE_GOAL - 100) {
             if (isFlyingMode) {
-                // Spawn sky coin groups during flight mode!
                 spawnSkyCoins();
             } else {
                 spawnCoinGroup();
@@ -2357,7 +2430,6 @@ function tick() {
     } 
     
     else if (gameState === 'VICTORY') {
-        // --- EPIC SLOW-MOTION MATRIX CAMERA ZOOM SPIN ---
         const slowDt = dt * 0.12; 
         
         if (victoryGate) {
