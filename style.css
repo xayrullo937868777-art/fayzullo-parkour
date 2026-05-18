@@ -1,13 +1,14 @@
 :root {
-    --bg-dark: #07080d;
+    --bg-dark: #050a07;
+    --neon-green: #39ff14;
     --neon-cyan: #00f0ff;
     --neon-pink: #ff007f;
     --neon-purple: #8b00ff;
     --neon-gold: #ffbe0b;
     --neon-red: #ff3333;
-    --text-light: #f0f3ff;
-    --glass-bg: rgba(10, 12, 22, 0.75);
-    --glass-border: rgba(0, 240, 255, 0.15);
+    --text-light: #f0fff4;
+    --glass-bg: rgba(6, 12, 9, 0.8);
+    --glass-border: rgba(57, 255, 20, 0.15);
     --font-primary: 'Outfit', sans-serif;
     --font-gaming: 'Orbitron', sans-serif;
 }
@@ -41,9 +42,9 @@ body {
     height: 100%;
     max-width: 100%;
     max-height: 100%;
-    background-color: #030305;
+    background-color: #020403;
     overflow: hidden;
-    box-shadow: 0 0 50px rgba(139, 0, 255, 0.2);
+    box-shadow: 0 0 50px rgba(57, 255, 20, 0.15);
 }
 
 /* Canvas Styling */
@@ -76,12 +77,12 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 .score-container {
-    border-color: rgba(0, 240, 255, 0.3);
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+    border-color: rgba(57, 255, 20, 0.35);
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.1);
 }
 
 .highscore-container {
@@ -90,8 +91,8 @@ canvas {
 }
 
 .multiplier-container {
-    border-color: rgba(255, 0, 127, 0.3);
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.1);
+    border-color: rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
     animation: pulse 1s infinite alternate;
 }
 
@@ -99,7 +100,7 @@ canvas {
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 2px;
-    color: rgba(240, 243, 255, 0.6);
+    color: rgba(240, 255, 244, 0.6);
     margin-bottom: 2px;
 }
 
@@ -112,7 +113,7 @@ canvas {
 }
 
 #currentScore {
-    color: var(--neon-cyan);
+    color: var(--neon-green);
 }
 
 #highScore {
@@ -120,7 +121,7 @@ canvas {
 }
 
 #comboText {
-    color: var(--neon-pink);
+    color: var(--neon-cyan);
     font-size: 24px;
 }
 
@@ -135,7 +136,7 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(4, 5, 10, 0.85);
+    background: rgba(3, 8, 5, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -158,9 +159,9 @@ canvas {
     border-radius: 24px;
     padding: 40px;
     width: 90%;
-    max-width: 480px;
+    max-width: 500px;
     text-align: center;
-    box-shadow: 0 0 40px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(139, 0, 255, 0.1);
+    box-shadow: 0 0 40px rgba(57, 255, 20, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     display: flex;
@@ -170,24 +171,24 @@ canvas {
 
 .game-title {
     font-family: var(--font-gaming);
-    font-size: 38px;
+    font-size: 36px;
     font-weight: 900;
     letter-spacing: 3px;
     color: var(--neon-cyan);
-    text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+    text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
     margin-bottom: 5px;
 }
 
-.neon-pink {
-    color: var(--neon-pink);
-    text-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+.neon-green {
+    color: var(--neon-green);
+    text-shadow: 0 0 15px rgba(57, 255, 20, 0.6);
 }
 
 .game-subtitle {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 5px;
-    color: rgba(240, 243, 255, 0.4);
+    color: rgba(240, 255, 244, 0.4);
     margin-bottom: 25px;
 }
 
@@ -198,8 +199,8 @@ canvas {
 
 /* Instructions & Stats Cards */
 .instructions-card, .stats-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 16px;
     padding: 20px;
     width: 100%;
@@ -211,7 +212,7 @@ canvas {
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 2px;
-    color: var(--neon-cyan);
+    color: var(--neon-green);
     margin-bottom: 15px;
     display: flex;
     align-items: center;
@@ -231,28 +232,28 @@ canvas {
 }
 
 .key {
-    background: rgba(240, 243, 255, 0.1);
-    border: 1px solid rgba(240, 243, 255, 0.2);
+    background: rgba(240, 255, 244, 0.1);
+    border: 1px solid rgba(240, 255, 244, 0.2);
     border-radius: 6px;
     padding: 4px 8px;
     font-family: var(--font-gaming);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    color: var(--neon-cyan);
-    min-width: 65px;
+    color: var(--neon-green);
+    min-width: 60px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .guide-desc {
     font-size: 12px;
-    color: rgba(240, 243, 255, 0.7);
+    color: rgba(240, 255, 244, 0.7);
     font-weight: 600;
 }
 
 .mobile-tip {
     font-size: 10px;
-    color: rgba(240, 243, 255, 0.4);
+    color: rgba(240, 255, 244, 0.4);
     margin-top: 15px;
     text-align: center;
     font-weight: 600;
@@ -270,7 +271,7 @@ canvas {
     align-items: center;
     font-size: 15px;
     font-weight: 600;
-    color: rgba(240, 243, 255, 0.8);
+    color: rgba(240, 255, 244, 0.8);
 }
 
 .stat-val {
@@ -280,8 +281,8 @@ canvas {
     text-shadow: 0 0 5px currentColor;
 }
 
-.highlight-cyan {
-    color: var(--neon-cyan);
+.highlight-green {
+    color: var(--neon-green);
 }
 
 .highlight-gold {
@@ -289,7 +290,7 @@ canvas {
 }
 
 .new-record-tag {
-    background: linear-gradient(45deg, var(--neon-gold), #ff8800);
+    background: linear-gradient(45deg, var(--neon-gold), #ffaa00);
     color: #000;
     font-weight: 900;
     font-size: 12px;
@@ -319,13 +320,13 @@ canvas {
 }
 
 .btn-primary {
-    background: var(--neon-cyan);
-    color: #07080d;
+    background: var(--neon-green);
+    color: #050a07;
 }
 
 .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 0 25px var(--neon-cyan);
+    box-shadow: 0 0 25px var(--neon-green);
 }
 
 .btn-secondary {
@@ -342,25 +343,30 @@ canvas {
     transform: translateY(1px);
 }
 
-/* Mobile Controls Overlay */
+/* Upgraded 4-Button Mobile Layout */
 .mobile-controls {
     position: absolute;
     bottom: 25px;
-    left: 20px;
-    right: 20px;
-    display: none; /* Only visible on touch devices */
+    left: 25px;
+    right: 25px;
+    display: none; /* Auto-detected on touch / small screen */
     justify-content: space-between;
     z-index: 15;
     pointer-events: none;
 }
 
-.control-btn {
+.mobile-group {
+    display: flex;
+    gap: 15px;
     pointer-events: auto;
-    width: 100px;
-    height: 100px;
+}
+
+.control-btn {
+    width: 85px;
+    height: 85px;
     border-radius: 50%;
     border: 2px solid var(--glass-border);
-    background: rgba(10, 12, 22, 0.8);
+    background: rgba(5, 10, 7, 0.85);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: var(--text-light);
@@ -370,26 +376,42 @@ canvas {
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    transition: all 0.15s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    transition: all 0.1s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 .control-btn i {
-    font-size: 24px;
-    transition: transform 0.15s ease;
+    font-size: 22px;
+    transition: transform 0.1s ease;
 }
 
 .control-btn span {
     font-family: var(--font-gaming);
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 800;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
+}
+
+/* Specific button neon glows */
+.steer-btn {
+    border-color: rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+}
+
+.steer-btn i {
+    color: var(--neon-cyan);
+}
+
+.steer-btn:active {
+    transform: scale(0.9);
+    background: rgba(0, 240, 255, 0.25);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
 }
 
 .slide-btn {
     border-color: rgba(255, 0, 127, 0.4);
-    box-shadow: 0 0 20px rgba(255, 0, 127, 0.15);
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.15);
 }
 
 .slide-btn i {
@@ -399,22 +421,22 @@ canvas {
 .slide-btn:active {
     transform: scale(0.9);
     background: rgba(255, 0, 127, 0.25);
-    box-shadow: 0 0 30px rgba(255, 0, 127, 0.4);
+    box-shadow: 0 0 25px rgba(255, 0, 127, 0.4);
 }
 
 .jump-btn {
-    border-color: rgba(0, 240, 255, 0.4);
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+    border-color: rgba(57, 255, 20, 0.4);
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.15);
 }
 
 .jump-btn i {
-    color: var(--neon-cyan);
+    color: var(--neon-green);
 }
 
 .jump-btn:active {
     transform: scale(0.9);
-    background: rgba(0, 240, 255, 0.25);
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+    background: rgba(57, 255, 20, 0.25);
+    box-shadow: 0 0 25px rgba(57, 255, 20, 0.4);
 }
 
 /* Animations */
@@ -433,8 +455,8 @@ canvas {
 }
 
 @keyframes glow-pulse {
-    0% { border-color: rgba(0, 240, 255, 0.15); box-shadow: 0 0 20px rgba(0, 240, 255, 0.05); }
-    100% { border-color: rgba(139, 0, 255, 0.4); box-shadow: 0 0 30px rgba(139, 0, 255, 0.2); }
+    0% { border-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 20px rgba(57, 255, 20, 0.05); }
+    100% { border-color: rgba(0, 240, 255, 0.4); box-shadow: 0 0 30px rgba(0, 240, 255, 0.2); }
 }
 
 .animate-shake {
@@ -447,14 +469,14 @@ canvas {
     40%, 80% { transform: translateX(6px); }
 }
 
-/* Responsive / Device specific adaptions */
+/* Devices/Touch screens */
 @media (max-width: 768px) {
     .menu-card {
-        padding: 30px 20px;
+        padding: 30px 15px;
     }
     
     .game-title {
-        font-size: 30px;
+        font-size: 28px;
     }
     
     .hud {
@@ -471,14 +493,22 @@ canvas {
         font-size: 16px;
     }
     
-    /* Show mobile buttons on smaller screens/touch screen devices */
     .mobile-controls {
         display: flex;
+    }
+
+    .control-btn {
+        width: 70px;
+        height: 70px;
+    }
+
+    .control-btn i {
+        font-size: 18px;
     }
 }
 
 @media (pointer: coarse) {
-    /* Touch screen devices - always show controls */
+    /* Touchscreen devices */
     .mobile-controls {
         display: flex;
     }
