@@ -1,6 +1,7 @@
 /**
  * Cyber Forest Parkour 3D - Breathtaking 3D WebGL Forest Runner
- * Valley Meadow Edition: Endless Grassy Ground, Stones, Space Ninja & Flowing Cape!
+ * Valley Arcade Edition: Endless Grassy Ground, Stones, Space Ninja,
+ * Cyber Katana, Dual Jetpacks, Collectible Coins, Hover-Cars & Flapping Birds!
  * Powered by Three.js. 3-Lane Horizontal Steering.
  */
 
@@ -31,17 +32,21 @@ let clock = new THREE.Clock();
 // Game Parameters
 let gameState = 'START';
 let score = 0;
-let highScore = parseInt(localStorage.getItem('cyber_forest_valley_highscore')) || 0;
+let highScore = parseInt(localStorage.getItem('cyber_forest_arcade_highscore')) || 0;
 let gameSpeed = 38; // Z-axis speed
 const MAX_SPEED = 82;
 let distanceRun = 0;
 let obstacleTimer = 0;
 let nextObstacleTime = 1.6; // Spawning interval in seconds
+let coinGroupTimer = 0;
 let cameraShake = 0;
 
 // Entities
 let player;
 let obstacles = [];
+let coins = [];
+let hoverCars = [];
+let birds = [];
 let trees = [];
 let clouds = [];
 let pollen = [];
@@ -127,7 +132,7 @@ function createEndlessGrassyGround() {
 
     massiveFloor = new THREE.Mesh(floorGeo, floorMat);
     massiveFloor.rotation.x = -Math.PI / 2;
-    massiveFloor.position.set(0, -0.05, -length / 3); // Slightly below elevated path
+    massiveFloor.position.set(0, -0.05, -length / 3);
     scene.add(massiveFloor);
 }
 
@@ -144,7 +149,7 @@ function createForestPath() {
     pctx.fillStyle = '#112c1b';
     pctx.fillRect(0, 0, 128, 128);
     
-    // Earthy dirt center path
+    // Earthy dirt path center
     pctx.fillStyle = '#3d2b1f';
     pctx.fillRect(25, 0, 78, 128);
     
@@ -243,12 +248,11 @@ function create3DForest() {
     const leavesMat2 = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.85, flatShading: true });
     const sunlitLeavesMat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.85, flatShading: true });
 
-    // Stylized flat-shading low-poly rocks/stones
+    // Stylized flat-shading rocks
     const rockGeo = new THREE.DodecahedronGeometry(1.0, 0);
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x7c858b, roughness: 0.8, metalness: 0.2, flatShading: true });
 
     for (let i = 0; i < 40; i++) {
-        // Group containing tree AND stones for easy simultaneous motion
         const treeGroup = new THREE.Group();
         
         // 1. Tree Trunk
@@ -281,11 +285,9 @@ function create3DForest() {
         for (let r = 0; r < rockCount; r++) {
             const rock = new THREE.Mesh(rockGeo, rockMat);
             
-            // Randomly offset around tree trunk base
             const rx = (Math.random() - 0.5) * 2.2;
             const rz = (Math.random() - 0.5) * 2.2;
             
-            // Random rock sizes and rotations
             const rw = 0.3 + Math.random() * 0.7;
             const rh = 0.2 + Math.random() * 0.5;
             const rd = 0.3 + Math.random() * 0.7;
@@ -336,6 +338,202 @@ function create3DForest() {
             timeOffset: Math.random() * Math.PI * 2,
             speed: 0.5 + Math.random() * 1.5
         });
+    }
+}
+
+// --- 3D COLLECTIBLE COINS CLASS (Tanga qo'shish) ---
+class Coin3D {
+    constructor(lane, z) {
+        this.lane = lane; // -1: Left, 0: Center, 1: Right
+        this.z = z;
+        this.collected = false;
+
+        this.buildCoinMesh();
+    }
+
+    buildCoinMesh() {
+        this.group = new THREE.Group();
+
+        // Sideways cylinder turned representing spinning gold coin
+        const coinGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.08, 8);
+        const coinMat = new THREE.MeshStandardMaterial({
+            color: COLOR_GOLD,
+            roughness: 0.1,
+            metalness: 0.95,
+            emissive: 0xaa7700,
+            emissiveIntensity: 0.6
+        });
+
+        this.mesh = new THREE.Mesh(coinGeo, coinMat);
+        this.mesh.rotation.x = Math.PI / 2; // Flat sideways spin
+        this.group.add(this.mesh);
+
+        // Place on the lane X and altitude
+        const spawnX = LANES[this.lane + 1];
+        this.group.position.set(spawnX, 0.72, this.z); // Hovering height
+        scene.add(this.group);
+    }
+
+    update(dt) {
+        this.z += gameSpeed * dt;
+        this.group.position.z = this.z;
+
+        // Spin dynamically
+        this.group.rotation.y += 3.8 * dt;
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        this.mesh.geometry.dispose();
+        this.mesh.material.dispose();
+    }
+}
+
+function spawnCoinGroup() {
+    // Select random lane and spawn 3 coins spaced out in Z direction
+    const lane = Math.floor(Math.random() * 3) - 1;
+    const startZ = -280;
+    
+    for (let i = 0; i < 3; i++) {
+        coins.push(new Coin3D(lane, startZ - (i * 7.5)));
+    }
+}
+
+// --- 3D FUTURISTIC FLYING HOVER-CARS CLASS (Moshina qo'shish) ---
+class HoverCar3D {
+    constructor() {
+        this.z = -350;
+        
+        // Randomly flank Left (-12 to -6) or Right (6 to 12)
+        this.side = Math.random() < 0.5 ? -1 : 1;
+        this.x = this.side * (8 + Math.random() * 7);
+        this.y = 2.2 + Math.random() * 3.5; // Flying height
+        
+        // Slightly faster or slower than average scrolling
+        this.speedOffset = (Math.random() - 0.5) * 15;
+
+        this.buildCarMesh();
+    }
+
+    buildCarMesh() {
+        this.group = new THREE.Group();
+
+        // Dynamic cyber colors (Cyan, Magenta, Silver)
+        const colors = [0x1a2130, 0x5a5a5a, 0x054b8b, 0xa10d0d];
+        const carColor = colors[Math.floor(Math.random() * colors.length)];
+
+        const bodyGeo = new THREE.BoxGeometry(1.4, 0.55, 3.0);
+        const bodyMat = new THREE.MeshStandardMaterial({
+            color: carColor,
+            roughness: 0.2,
+            metalness: 0.95,
+            flatShading: true
+        });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        this.group.add(body);
+
+        // Glowing cyan headlights in front
+        const headlightGeo = new THREE.BoxGeometry(0.2, 0.1, 0.1);
+        const headlightMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
+        
+        const hLeft = new THREE.Mesh(headlightGeo, headlightMat);
+        hLeft.position.set(-0.5, 0, 1.51);
+        this.group.add(hLeft);
+
+        const hRight = hLeft.clone();
+        hRight.position.x = 0.5;
+        this.group.add(hRight);
+
+        // Glowing red taillights in back
+        const taillightGeo = new THREE.BoxGeometry(0.2, 0.1, 0.1);
+        const taillightMat = new THREE.MeshBasicMaterial({ color: COLOR_RED });
+        
+        const tLeft = new THREE.Mesh(taillightGeo, taillightMat);
+        tLeft.position.set(-0.5, 0, -1.51);
+        this.group.add(tLeft);
+
+        const tRight = tLeft.clone();
+        tRight.position.x = 0.5;
+        this.group.add(tRight);
+
+        this.group.position.set(this.x, this.y, this.z);
+        scene.add(this.group);
+    }
+
+    update(dt) {
+        // Moves backward
+        this.z += (gameSpeed + this.speedOffset) * dt;
+        this.group.position.z = this.z;
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        this.group.traverse(node => {
+            if (node.isMesh) {
+                node.geometry.dispose();
+                node.material.dispose();
+            }
+        });
+    }
+}
+
+// --- 3D FLAPPING BIRDS CLASS (Qush qo'shish) ---
+class Bird3D {
+    constructor() {
+        this.z = -350;
+        this.x = (Math.random() - 0.5) * 35;
+        this.y = 10 + Math.random() * 6; // Soaring altitude
+        this.speedOffset = -5 - Math.random() * 8; // Drifts forward/backward
+
+        this.wingOffset = Math.random() * Math.PI;
+
+        this.buildBirdMesh();
+    }
+
+    buildBirdMesh() {
+        this.group = new THREE.Group();
+
+        // 1. Central Body
+        const bodyGeo = new THREE.BoxGeometry(0.3, 0.2, 0.6);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
+        this.body = new THREE.Mesh(bodyGeo, bodyMat);
+        this.group.add(this.body);
+
+        // 2. Flapping Wings (V-wing joints)
+        const wingGeo = new THREE.BoxGeometry(0.65, 0.02, 0.25);
+        wingGeo.translate(0.325, 0, 0); // Shift pivot anchor to shoulder
+
+        const wingMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.9, flatShading: true });
+        
+        this.leftWing = new THREE.Mesh(wingGeo, wingMat);
+        this.leftWing.position.set(-0.15, 0, 0);
+        this.group.add(this.leftWing);
+
+        this.rightWing = new THREE.Mesh(wingGeo, wingMat);
+        this.rightWing.rotation.y = Math.PI; // Flip opposite
+        this.rightWing.position.set(0.15, 0, 0);
+        this.group.add(this.rightWing);
+
+        this.group.position.set(this.x, this.y, this.z);
+        scene.add(this.group);
+    }
+
+    update(dt, time) {
+        this.z += (gameSpeed + this.speedOffset) * dt;
+        this.group.position.z = this.z;
+
+        // Realistic fast flapping wing motion
+        const flap = Math.sin(time * 15 + this.wingOffset) * 0.72;
+        this.leftWing.rotation.z = flap;
+        this.rightWing.rotation.z = -flap; // Symmetrical opposites
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        this.body.geometry.dispose();
+        this.body.material.dispose();
+        this.leftWing.geometry.dispose();
+        this.rightWing.geometry.dispose();
     }
 }
 
@@ -390,7 +588,7 @@ function spawnSparks3D(x, y, z, color) {
     }
 }
 
-// --- 3D SPACE NINJA PLAYER WITH A FLOWING NEON CAPE ---
+// --- 3D SPACE NINJA PLAYER WITH CYBER KATANA, DUAL JETPACKS & STRIPED CAPE ---
 class Player3D {
     constructor() {
         this.group = new THREE.Group();
@@ -422,10 +620,11 @@ class Player3D {
 
     buildSpaceNinjaMesh() {
         // High-end futuristic materials
-        const darkSuitsMat = new THREE.MeshStandardMaterial({ color: 0x1d2127, roughness: 0.4, metalness: 0.9 }); // Dark matte carbon suit
+        const darkSuitsMat = new THREE.MeshStandardMaterial({ color: 0x1d2127, roughness: 0.4, metalness: 0.9 });
         const neonGreenMat = new THREE.MeshStandardMaterial({ color: COLOR_GREEN, emissive: COLOR_GREEN, emissiveIntensity: 0.8 });
+        const neonPinkMat = new THREE.MeshStandardMaterial({ color: COLOR_PINK, emissive: COLOR_PINK, emissiveIntensity: 0.9 });
         const cyanVisorMat = new THREE.MeshStandardMaterial({ color: COLOR_CYAN, emissive: COLOR_CYAN, emissiveIntensity: 1.0 });
-        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.1, metalness: 0.95 }); // Reflective silver helmet
+        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.1, metalness: 0.95 });
 
         // 1. Torso
         const torsoGeo = new THREE.BoxGeometry(0.72, 0.9, 0.45);
@@ -433,7 +632,7 @@ class Player3D {
         this.torso.position.y = 1.0;
         this.group.add(this.torso);
 
-        // Glowing center medallion
+        // Glowing chest logo
         const coreGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 8);
         this.chestCore = new THREE.Mesh(coreGeo, neonGreenMat);
         this.chestCore.rotation.x = Math.PI / 2;
@@ -446,26 +645,78 @@ class Player3D {
         this.head.position.y = 1.65;
         this.group.add(this.head);
 
-        // Curved Cyan visors covering front
+        // Curved Cyan visor
         const visorGeo = new THREE.SphereGeometry(0.27, 12, 12, 0, Math.PI, 0, Math.PI / 2);
         this.visor = new THREE.Mesh(visorGeo, cyanVisorMat);
         this.visor.rotation.x = Math.PI / 2.5;
         this.visor.position.set(0, 1.68, 0.05);
         this.group.add(this.visor);
 
-        // 3. Dynamic Waving Neon Green Cape (Hilpirab turadigan Kiyim!)
-        // Pivot point at shoulders to swing cleanly
+        // 3. Dynamic Waving Neon Green Cape with Pink Racing Stripes (Kiyimda pushti chiziqlar!)
         this.capeGroup = new THREE.Group();
         this.capeGroup.position.set(0, 1.35, -0.22); // Shoulder position
         this.group.add(this.capeGroup);
 
         const capeGeo = new THREE.BoxGeometry(0.68, 1.3, 0.03);
-        // Slightly shift geometry so its pivot remains at shoulder height
         capeGeo.translate(0, -0.65, 0); 
         this.cape = new THREE.Mesh(capeGeo, neonGreenMat);
         this.capeGroup.add(this.cape);
 
-        // 4. Limbs
+        // Neon Pink racing border stripes running down the sides
+        const stripeGeo = new THREE.BoxGeometry(0.06, 1.3, 0.04);
+        stripeGeo.translate(0, -0.65, 0);
+        
+        const stripeLeft = new THREE.Mesh(stripeGeo, neonPinkMat);
+        stripeLeft.position.set(-0.35, 0, 0.01);
+        this.capeGroup.add(stripeLeft);
+
+        const stripeRight = stripeLeft.clone();
+        stripeRight.position.x = 0.35;
+        this.capeGroup.add(stripeRight);
+
+        // 4. Cyber Katana Sword slung diagonally at 45 degrees (Kiber-Katana Qilichi!)
+        this.katanaGroup = new THREE.Group();
+        this.katanaGroup.position.set(0.12, 1.05, -0.25);
+        this.katanaGroup.rotation.z = -Math.PI / 4; // Slung diagonally 45deg
+        this.group.add(this.katanaGroup);
+
+        // Sword handle
+        const handleGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8);
+        const handle = new THREE.Mesh(handleGeo, darkSuitsMat);
+        handle.position.y = 0.65;
+        this.katanaGroup.add(handle);
+
+        // Emissive cyan katana blade
+        const bladeGeo = new THREE.BoxGeometry(0.03, 1.0, 0.07);
+        const bladeMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
+        const blade = new THREE.Mesh(bladeGeo, bladeMat);
+        blade.position.y = -0.05;
+        this.katanaGroup.add(blade);
+
+        // 5. Dual Jetpack Canisters with ignitable Cyan exhaust flames (Jetpack Dvigatellari!)
+        this.jetpackLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45, 8), chromeMat);
+        this.jetpackLeft.position.set(-0.25, 1.25, -0.23);
+        this.group.add(this.jetpackLeft);
+
+        this.jetpackRight = this.jetpackLeft.clone();
+        this.jetpackRight.position.x = 0.25;
+        this.group.add(this.jetpackRight);
+
+        // Ignitable Cyan Fire Cones (visible in mid-air jumping!)
+        const flameGeo = new THREE.ConeGeometry(0.06, 0.32, 8);
+        flameGeo.translate(0, -0.16, 0); // Offset pivot
+        const flameMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
+
+        this.flameLeft = new THREE.Mesh(flameGeo, flameMat);
+        this.flameLeft.position.set(0, -0.225, 0);
+        this.flameLeft.visible = false;
+        this.jetpackLeft.add(this.flameLeft);
+
+        this.flameRight = this.flameLeft.clone();
+        this.flameRight.visible = false;
+        this.jetpackRight.add(this.flameRight);
+
+        // 6. Limbs
         const limbGeo = new THREE.BoxGeometry(0.18, 0.5, 0.18);
         
         this.leftArm = new THREE.Mesh(limbGeo, darkSuitsMat);
@@ -554,6 +805,19 @@ class Player3D {
             this.vy = 0;
             this.isJumping = false;
             this.isDoubleJumping = false;
+            
+            // Extinguish thruster flames on ground contact
+            this.flameLeft.visible = false;
+            this.flameRight.visible = false;
+        } else {
+            // Ignite Jetpack exhaust flames in mid-air! (Jetpack reaktiv olovlar!)
+            this.flameLeft.visible = true;
+            this.flameRight.visible = true;
+            
+            // Flicker flames dynamically for stunning jet thruster look
+            const flicker = 0.8 + Math.random() * 0.55;
+            this.flameLeft.scale.y = flicker;
+            this.flameRight.scale.y = flicker;
         }
 
         if (!this.isSliding) {
@@ -581,7 +845,7 @@ class Player3D {
                 ));
             }
 
-            // Flaps horizontally flat behind player during slide
+            // Cape flaps flat during slide
             this.capeGroup.rotation.x = Math.PI / 2.3;
         } else if (this.isJumping) {
             this.leftLeg.rotation.x = -0.6;
@@ -589,7 +853,6 @@ class Player3D {
             this.leftArm.rotation.x = 0.6;
             this.rightArm.rotation.x = 0.6;
 
-            // Trails straight down/flaps slightly
             this.capeGroup.rotation.x = 0.1;
         } else {
             const swing = Math.sin(this.animTime);
@@ -602,7 +865,6 @@ class Player3D {
             this.head.position.y = 1.65 + Math.abs(swing) * 0.06;
 
             // Dynamic Cape Waving Animation (Hilpirab turadigan kiyim!)
-            // Floating backwards based on speed + waving wave offset
             const baseDragAngle = Math.PI / 6 + (gameSpeed - 38) * 0.005; 
             const waveAngle = Math.sin(this.animTime * 1.6) * 0.15;
             this.capeGroup.rotation.x = baseDragAngle + waveAngle;
@@ -719,7 +981,7 @@ class Obstacle3D {
     }
 }
 
-// --- COLLISION DETECTION INTEGRATING LANES ---
+// --- COLLISION DETECTION ---
 function checkCollision3D(p, o) {
     const pZ = p.group.position.z;
     const pX = p.group.position.x;
@@ -748,6 +1010,21 @@ function checkCollision3D(p, o) {
     else {
         return (p.y + p.height > 0.1 && p.y < o.height);
     }
+}
+
+// Check overlapping with coins (simple bounding sphere check)
+function checkCoinCollision(p, c) {
+    const pZ = p.group.position.z;
+    const pX = p.group.position.x;
+    const pY = p.group.position.y;
+
+    const cX = LANES[c.lane + 1];
+    const cZ = c.z;
+    const cY = 0.72; // coin height
+
+    // Standard distance check in 3D
+    const dist = Math.sqrt((pX - cX)**2 + (pY + 0.8 - cY)**2 + (pZ - cZ)**2);
+    return dist < 1.05; // overlap radius
 }
 
 // --- INPUT TRIGGERS ---
@@ -781,7 +1058,7 @@ function stopSlide() {
     }
 }
 
-// Keyboard Inputs (A/D and Left/Right Arrows for steering)
+// Keyboard Inputs
 window.addEventListener('keydown', (e) => {
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
         e.preventDefault();
@@ -824,14 +1101,21 @@ window.addEventListener('mouseup', () => { stopSlide(); });
 // --- GAME STATE FLOWS ---
 function init() {
     obstacles.forEach(o => o.destroy());
+    coins.forEach(c => c.destroy());
+    hoverCars.forEach(hc => hc.destroy());
+    birds.forEach(b => b.destroy());
     particles.forEach(p => p.destroy());
     
     score = 0;
     gameSpeed = 38;
     distanceRun = 0;
     obstacleTimer = 0;
+    coinGroupTimer = 0;
     cameraShake = 0;
     obstacles = [];
+    coins = [];
+    hoverCars = [];
+    birds = [];
     particles = [];
 
     // Reset player position & lane
@@ -860,7 +1144,6 @@ function gameOver() {
     gameState = 'GAMEOVER';
     cameraShake = 1.9;
     
-    // Spawn red sparks representing a system crash
     spawnSparks3D(player.group.position.x, player.group.position.y + 0.8, player.group.position.z, COLOR_RED);
     
     if (navigator.vibrate) {
@@ -872,7 +1155,7 @@ function gameOver() {
     
     if (finalScore > highScore) {
         highScore = finalScore;
-        localStorage.setItem('cyber_forest_valley_highscore', highScore);
+        localStorage.setItem('cyber_forest_arcade_highscore', highScore);
         highScoreEl.textContent = String(highScore).padStart(5, '0');
         newRecordTag.classList.remove('hidden');
     } else {
@@ -895,6 +1178,7 @@ function tick() {
     requestAnimationFrame(tick);
     
     const dt = Math.min(0.03, clock.getDelta());
+    const time = clock.getElapsedTime();
 
     if (gameState === 'PLAYING') {
         // 1. Scroll forest path backward
@@ -923,7 +1207,6 @@ function tick() {
         });
 
         // 4. Drift golden sunlit pollen
-        const time = clock.getElapsedTime();
         pollen.forEach(p => {
             p.mesh.position.z += gameSpeed * 0.45 * dt;
             p.mesh.position.x += Math.sin(time * p.speed + p.timeOffset) * 0.035;
@@ -936,7 +1219,78 @@ function tick() {
             }
         });
 
-        // 5. Spawning obstacles
+        // 5. Spawning flying hover-cars periodically (Moshina qo'shish!)
+        if (Math.random() < 0.008) {
+            hoverCars.push(new HoverCar3D());
+        }
+
+        // 6. Update Hover-Cars
+        for (let i = hoverCars.length - 1; i >= 0; i--) {
+            const hc = hoverCars[i];
+            hc.update(dt);
+            if (hc.z > 40) {
+                hc.destroy();
+                hoverCars.splice(i, 1);
+            }
+        }
+
+        // 7. Spawning flapping birds periodically (Qush qo'shish!)
+        if (Math.random() < 0.005) {
+            birds.push(new Bird3D());
+        }
+
+        // 8. Update flapping birds
+        for (let i = birds.length - 1; i >= 0; i--) {
+            const b = birds[i];
+            b.update(dt, time);
+            if (b.z > 40) {
+                b.destroy();
+                birds.splice(i, 1);
+            }
+        }
+
+        // 9. Spawning collectible coins (Tanga qo'shish!)
+        coinGroupTimer += dt;
+        if (coinGroupTimer >= 4.5) {
+            spawnCoinGroup();
+            coinGroupTimer = 0;
+        }
+
+        // 10. Update and Collide Gold Coins
+        for (let i = coins.length - 1; i >= 0; i--) {
+            const c = coins[i];
+            c.update(dt);
+
+            // Collide detection with player
+            if (checkCoinCollision(player, c)) {
+                c.collected = true;
+                score += 50; // Bonus points!
+                
+                // Spawn golden explosion sparks
+                for (let k = 0; k < 8; k++) {
+                    particles.push(new Particle3D(
+                        c.group.position.x,
+                        c.group.position.y,
+                        c.group.position.z,
+                        (Math.random() - 0.5) * 8,
+                        Math.random() * 8 + 2,
+                        (Math.random() - 0.5) * 8,
+                        COLOR_GOLD, 0.1, 0.3
+                    ));
+                }
+
+                c.destroy();
+                coins.splice(i, 1);
+                continue;
+            }
+
+            if (c.z > 15) {
+                c.destroy();
+                coins.splice(i, 1);
+            }
+        }
+
+        // 11. Spawning obstacles
         obstacleTimer += dt;
         if (obstacleTimer >= nextObstacleTime) {
             obstacles.push(new Obstacle3D());
@@ -944,7 +1298,7 @@ function tick() {
             nextObstacleTime = Math.max(0.6, 1.7 - (gameSpeed * 0.014) + Math.random() * 0.35);
         }
 
-        // 6. Update Obstacles
+        // 12. Update Obstacles
         for (let i = obstacles.length - 1; i >= 0; i--) {
             const o = obstacles[i];
             o.update(dt);
@@ -973,10 +1327,10 @@ function tick() {
             }
         }
 
-        // 7. Update Player Sideways & Vertical Physics ( cape anims!)
+        // 13. Update Player Sideways & Vertical Physics (Exhaust flame & cape)
         player.update(dt);
 
-        // 8. Accelerate runner
+        // 14. Accelerate runner
         distanceRun += dt;
         score += dt * 18;
         if (gameSpeed < MAX_SPEED) {
@@ -986,7 +1340,7 @@ function tick() {
         currentScoreEl.textContent = String(Math.floor(score)).padStart(5, '0');
     }
 
-    // 9. Particle engine update
+    // 15. Particle engine update
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.update(dt);
@@ -996,7 +1350,7 @@ function tick() {
         }
     }
 
-    // 10. Chase Camera Follow
+    // 16. Chase Camera Follow
     if (player) {
         const targetCamY = player.isSliding ? 2.8 : 4.2 + (player.y - 0.1) * 0.4;
         camera.position.y += (targetCamY - camera.position.y) * 0.1;
