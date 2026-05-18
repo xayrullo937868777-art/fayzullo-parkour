@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Parkour | Neon Runner</title>
+    <meta name="description" content="Kiberpank uslubidagi dinamik va yuqori tezlikdagi neon parkur o'yini.">
+    <!-- Google Fonts for Futuristic Gaming Look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Dynamic Game Dashboard (In-game UI) -->
+        <div class="hud" id="hud">
+            <div class="hud-item score-container">
+                <span class="hud-label">SCORE</span>
+                <span class="hud-value" id="currentScore">00000</span>
+            </div>
+            <div class="hud-item highscore-container">
+                <span class="hud-label"><i class="fas fa-trophy text-gold"></i> BEST</span>
+                <span class="hud-value" id="highScore">00000</span>
+            </div>
+            <div class="hud-item multiplier-container" id="multiplierContainer">
+                <span class="hud-value" id="comboText">1.0x</span>
+            </div>
+        </div>
+
+        <!-- Glassmorphic Start Screen Overlay -->
+        <div class="overlay" id="startScreen">
+            <div class="menu-card animate-glow">
+                <h1 class="game-title">CYBER<span class="neon-pink">PARKOUR</span></h1>
+                <p class="game-subtitle">NEON RUNNER v1.0</p>
+                
+                <div class="instructions-card">
+                    <h3><i class="fas fa-gamepad"></i> BOSHQARISH TARTIBI:</h3>
+                    <div class="control-guides">
+                        <div class="guide-item">
+                            <span class="key">SPACE</span> / <span class="key"><i class="fas fa-arrow-up"></i></span>
+                            <span class="guide-desc">SAKRASH (Double Jump bor)</span>
+                        </div>
+                        <div class="guide-item">
+                            <span class="key"><i class="fas fa-arrow-down"></i></span>
+                            <span class="guide-desc">SIRPANISH (Slide / Dash)</span>
+                        </div>
+                    </div>
+                    <p class="mobile-tip"><i class="fas fa-mobile-alt"></i> Telefonda: Chap tugma - Sirpanish, O'ng tugma - Sakrash</p>
+                </div>
+
+                <button class="btn btn-primary" id="startBtn">
+                    <i class="fas fa-play"></i> O'YINNI BOSHLASH
+                </button>
+            </div>
+        </div>
+
+        <!-- Glassmorphic Game Over Screen Overlay -->
+        <div class="overlay hidden" id="gameOverScreen">
+            <div class="menu-card animate-shake">
+                <h1 class="game-title text-red">CRASHED</h1>
+                <p class="game-subtitle">TIZIM TO'XTADI</p>
+
+                <div class="stats-card">
+                    <div class="stat-row">
+                        <span>Erishilgan ball:</span>
+                        <span class="stat-val highlight-cyan" id="finalScore">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Eng yuqori ball:</span>
+                        <span class="stat-val highlight-gold" id="bestScore">0</span>
+                    </div>
+                    <div class="new-record-tag hidden" id="newRecordTag">
+                        <i class="fas fa-crown"></i> YANGI REKORD! <i class="fas fa-crown"></i>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary animate-pulse" id="restartBtn">
+                    <i class="fas fa-redo"></i> QAYTADAN BOSHLASH
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Touch Controls overlay -->
+        <div class="mobile-controls" id="mobileControls">
+            <button class="control-btn slide-btn" id="mobileSlideBtn" aria-label="Slide">
+                <i class="fas fa-angles-down"></i>
+                <span>SLIDE</span>
+            </button>
+            <button class="control-btn jump-btn" id="mobileJumpBtn" aria-label="Jump">
+                <i class="fas fa-angles-up"></i>
+                <span>JUMP</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Core Game Logic -->
+    <script src="game.js"></script>
+</body>
+</html>
