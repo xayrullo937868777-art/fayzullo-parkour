@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cyber Parkour 3D | Neon Runner</title>
-    <meta name="description" content="Kiberpank uslubidagi dinamik va yuqori tezlikdagi 3D neon parkur o'yini.">
+    <title>Cyber Forest Parkour 3D | Neon Runner</title>
+    <meta name="description" content="Tumanli kiber-o'rmon bo'ylab 3D formatda, 3 ta qatorda yugurish parkur o'yini.">
     <!-- Google Fonts for Futuristic Gaming Look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,26 +38,30 @@
         <!-- Glassmorphic Start Screen Overlay -->
         <div class="overlay" id="startScreen">
             <div class="menu-card animate-glow">
-                <h1 class="game-title">CYBER<span class="neon-pink">PARKOUR 3D</span></h1>
-                <p class="game-subtitle">NEON RUNNER v2.0</p>
+                <h1 class="game-title">FOREST<span class="neon-green">PARKOUR 3D</span></h1>
+                <p class="game-subtitle">NEON FOREST RUNNER v3.0</p>
                 
                 <div class="instructions-card">
                     <h3><i class="fas fa-gamepad"></i> BOSHQARISH TARTIBI:</h3>
                     <div class="control-guides">
                         <div class="guide-item">
+                            <span class="key"><i class="fas fa-arrow-left"></i></span> / <span class="key"><i class="fas fa-arrow-right"></i></span>
+                            <span class="guide-desc">CHAP / O'NG qatorga o'tish (A / D)</span>
+                        </div>
+                        <div class="guide-item">
                             <span class="key">SPACE</span> / <span class="key"><i class="fas fa-arrow-up"></i></span>
-                            <span class="guide-desc">SAKRASH (Double Jump bor)</span>
+                            <span class="guide-desc">SAKRASH (W) / Double Jump bor</span>
                         </div>
                         <div class="guide-item">
                             <span class="key"><i class="fas fa-arrow-down"></i></span>
-                            <span class="guide-desc">SIRPANISH (Slide / Dash)</span>
+                            <span class="guide-desc">SIRPANISH (S) (Laser tagidan o'tish)</span>
                         </div>
                     </div>
-                    <p class="mobile-tip"><i class="fas fa-mobile-alt"></i> Telefonda: Chap tugma - Sirpanish, O'ng tugma - Sakrash</p>
+                    <p class="mobile-tip"><i class="fas fa-mobile-alt"></i> Telefonda: Chapda - Chap/O'ng, O'ngda - Sirpanish/Sakrash</p>
                 </div>
 
                 <button class="btn btn-primary" id="startBtn">
-                    <i class="fas fa-play"></i> O'YINNI BOSHLASH (3D)
+                    <i class="fas fa-play"></i> O'RMONDAGI SARGŪZASHT
                 </button>
             </div>
         </div>
@@ -71,7 +75,7 @@
                 <div class="stats-card">
                     <div class="stat-row">
                         <span>Erishilgan ball:</span>
-                        <span class="stat-val highlight-cyan" id="finalScore">0</span>
+                        <span class="stat-val highlight-green" id="finalScore">0</span>
                     </div>
                     <div class="stat-row">
                         <span>Eng yuqori ball:</span>
@@ -88,16 +92,30 @@
             </div>
         </div>
 
-        <!-- Mobile Touch Controls overlay -->
+        <!-- Mobile Touch Controls overlay (Upgraded to 4 buttons) -->
         <div class="mobile-controls" id="mobileControls">
-            <button class="control-btn slide-btn" id="mobileSlideBtn" aria-label="Slide">
-                <i class="fas fa-angles-down"></i>
-                <span>SLIDE</span>
-            </button>
-            <button class="control-btn jump-btn" id="mobileJumpBtn" aria-label="Jump">
-                <i class="fas fa-angles-up"></i>
-                <span>JUMP</span>
-            </button>
+            <!-- Left Side: Horizontal Steering -->
+            <div class="mobile-group left-group">
+                <button class="control-btn steer-btn" id="mobileLeftBtn" aria-label="Move Left">
+                    <i class="fas fa-chevron-left"></i>
+                    <span>LEFT</span>
+                </button>
+                <button class="control-btn steer-btn" id="mobileRightBtn" aria-label="Move Right">
+                    <i class="fas fa-chevron-right"></i>
+                    <span>RIGHT</span>
+                </button>
+            </div>
+            <!-- Right Side: Vertical Moves -->
+            <div class="mobile-group right-group">
+                <button class="control-btn slide-btn" id="mobileSlideBtn" aria-label="Slide">
+                    <i class="fas fa-angles-down"></i>
+                    <span>SLIDE</span>
+                </button>
+                <button class="control-btn jump-btn" id="mobileJumpBtn" aria-label="Jump">
+                    <i class="fas fa-angles-up"></i>
+                    <span>JUMP</span>
+                </button>
+            </div>
         </div>
     </div>
 
