@@ -1,6 +1,6 @@
 /**
- * Cyber Forest Parkour 3D - Breathtaking 3D WebGL Forest Runner
- * Day-lit Forest Edition: Sky Blue & Fluffy Clouds.
+ * Cyber Forest Sky Islands 3D - Breathtaking 3D WebGL Forest Runner
+ * Floating Sky Islands & Space Ninja with Flowing Cape.
  * Powered by Three.js. 3-Lane Horizontal Steering.
  */
 
@@ -31,7 +31,7 @@ let clock = new THREE.Clock();
 // Game Parameters
 let gameState = 'START';
 let score = 0;
-let highScore = parseInt(localStorage.getItem('cyber_forest_day_highscore')) || 0;
+let highScore = parseInt(localStorage.getItem('cyber_sky_high_highscore')) || 0;
 let gameSpeed = 38; // Z-axis speed
 const MAX_SPEED = 82;
 let distanceRun = 0;
@@ -42,7 +42,7 @@ let cameraShake = 0;
 // Entities
 let player;
 let obstacles = [];
-let trees = [];
+let skyIslands = []; // Floating islands in the sky!
 let clouds = [];
 let pollen = [];
 let particles = [];
@@ -60,7 +60,7 @@ const COLOR_PURPLE = 0x8b00ff;
 const COLOR_GOLD = 0xffbe0b;
 const COLOR_RED = 0xff3333;
 
-// Vibrant Sky & Sunlit Mist
+// Radiant Sky & Sunlit Mist
 const COLOR_SKY_BLUE = 0x5fa9f8;
 const COLOR_SUN_MIST = 0x9ed2ff;
 
@@ -70,7 +70,7 @@ function initThree() {
     // 1. Create Scene with Beautiful Blue Sky & Light Sunlit Mist
     scene = new THREE.Scene();
     scene.background = new THREE.Color(COLOR_SKY_BLUE);
-    scene.fog = new THREE.FogExp2(COLOR_SUN_MIST, 0.0075); // Light fog to see distant clouds
+    scene.fog = new THREE.FogExp2(COLOR_SUN_MIST, 0.007); // Light fog to see sky elements
 
     // 2. Setup Perspective Chase Camera
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -96,49 +96,50 @@ function initThree() {
     skyLight.position.set(-15, 20, -10);
     scene.add(skyLight);
 
-    // 5. Build Scrolling Forest Ground Path
+    // 5. Build Scrolling Forest Ground Path (Lush Meadows + Central Dirt Road)
     createForestPath();
 
-    // 6. Generate 3D Clouds (High in Sky)
+    // 6. Generate 3D Fluffy Clouds (High in Sky)
     create3DClouds();
 
-    // 7. Generate 3D Natural Trees & Floating Pollen
-    create3DForest();
+    // 7. Generate 3D Floating Sky Islands (Uchar Orollar) & Floating Pollen
+    create3DSkyIslands();
 
-    // 8. Instantiate 3D Player
+    // 8. Instantiate 3D Player (Space Ninja with flowing cape!)
     player = new Player3D();
 }
 
-// Procedural scrolling dirt/neon forest runway
+// Procedural scrolling dirt/neon forest runway flanked by wide green grassy banks ("ko'p yer qo'sh")
 function createForestPath() {
-    const width = 10;
+    const width = 16; // Widen path for expanded grassy valley feel
     const length = 500;
     
-    // Create grassy dirt path in canvas memory
+    // Create grassy meadow path in canvas memory
     const pathCanvas = document.createElement('canvas');
-    pathCanvas.width = 128;
+    pathCanvas.width = 256;
     pathCanvas.height = 128;
     const pctx = pathCanvas.getContext('2d');
     
-    pctx.fillStyle = '#112c1b'; // Dark green grass base
-    pctx.fillRect(0, 0, 128, 128);
+    // Rich bright grass flanking sides
+    pctx.fillStyle = '#27ae60'; 
+    pctx.fillRect(0, 0, 256, 128);
     
-    // Earthy dirt center path
-    pctx.fillStyle = '#3d2b1f';
-    pctx.fillRect(25, 0, 78, 128);
+    // Central earthy dirt lane path
+    pctx.fillStyle = '#4e3629';
+    pctx.fillRect(72, 0, 112, 128);
     
     // Sunlit bright neon green lane delimiters
-    pctx.strokeStyle = 'rgba(57, 255, 20, 0.45)';
+    pctx.strokeStyle = 'rgba(57, 255, 20, 0.55)';
     pctx.lineWidth = 4;
     pctx.beginPath();
-    pctx.moveTo(42, 0); pctx.lineTo(42, 128);
-    pctx.moveTo(86, 0); pctx.lineTo(86, 128);
+    pctx.moveTo(102, 0); pctx.lineTo(102, 128);
+    pctx.moveTo(154, 0); pctx.lineTo(154, 128);
     pctx.stroke();
 
-    // Bright glowing borders
+    // Side glowing rails
     pctx.strokeStyle = '#39ff14';
     pctx.lineWidth = 6;
-    pctx.strokeRect(0, 0, 128, 128);
+    pctx.strokeRect(70, 0, 116, 128);
     
     const pathTexture = new THREE.CanvasTexture(pathCanvas);
     pathTexture.wrapS = THREE.RepeatWrapping;
@@ -148,10 +149,10 @@ function createForestPath() {
     const groundGeo = new THREE.PlaneGeometry(width, length);
     const groundMat = new THREE.MeshStandardMaterial({
         map: pathTexture,
-        roughness: 0.4,
-        metalness: 0.3,
-        emissive: 0x071e10,
-        emissiveIntensity: 0.3
+        roughness: 0.45,
+        metalness: 0.25,
+        emissive: 0x051d0e,
+        emissiveIntensity: 0.2
     });
 
     groundPath = new THREE.Mesh(groundGeo, groundMat);
@@ -165,11 +166,11 @@ function createForestPath() {
     
     const wireLeft = new THREE.Mesh(wireGeo, wireMat);
     wireLeft.rotation.x = Math.PI / 2;
-    wireLeft.position.set(-width / 2, 0.04, -length / 2);
+    wireLeft.position.set(-3.6, 0.04, -length / 2); // Lane width boundary
     scene.add(wireLeft);
 
     const wireRight = wireLeft.clone();
-    wireRight.position.x = width / 2;
+    wireRight.position.x = 3.6;
     scene.add(wireRight);
 }
 
@@ -186,14 +187,12 @@ function create3DClouds() {
     for (let i = 0; i < 12; i++) {
         const cloudGroup = new THREE.Group();
         
-        // Cluster 4-5 spheres together to form a puffy cloud shape
         const sphereCount = 4 + Math.floor(Math.random() * 3);
         for (let s = 0; s < sphereCount; s++) {
             const radius = 1.6 + Math.random() * 1.8;
             const sGeo = new THREE.SphereGeometry(radius, 8, 8);
             const sMesh = new THREE.Mesh(sGeo, cloudMat);
             
-            // Random cluster offsets
             const xOff = (Math.random() - 0.5) * 2.8;
             const yOff = (Math.random() - 0.5) * 0.8;
             const zOff = (Math.random() - 0.5) * 2.4;
@@ -202,14 +201,12 @@ function create3DClouds() {
             cloudGroup.add(sMesh);
         }
 
-        // Randomly place high up in the sky
         const x = (Math.random() - 0.5) * 60;
-        const y = 14 + Math.random() * 8; // Altitude
+        const y = 16 + Math.random() * 8; // Altitude
         const z = -Math.random() * 450 - 50;
         
         cloudGroup.position.set(x, y, z);
         
-        // Random drift speed
         const driftSpeed = 0.15 + Math.random() * 0.25;
         
         scene.add(cloudGroup);
@@ -221,65 +218,74 @@ function create3DClouds() {
     }
 }
 
-// Procedural Low-Poly Tree Generator & Sun Pollen Spawner
-function create3DForest() {
-    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 4.5, 6);
+// Procedural 3D Floating Sky Islands Generator ("daraxt osmonda bo'lib")
+function create3DSkyIslands() {
+    // Shared materials
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a4a42, roughness: 0.9, metalness: 0.2, flatShading: true }); // Rocky bottom
+    const grassMat = new THREE.MeshStandardMaterial({ color: 0x27ae60, roughness: 0.8, metalness: 0.1, flatShading: true }); // Grassy top
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4d3222, roughness: 0.95, flatShading: true }); // Natural wood trunk
     
-    // Natural day-forest foliage greens
-    const leavesMat1 = new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.85, flatShading: true }); // Forest Green
-    const leavesMat2 = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.85, flatShading: true }); // Sea Green
-    const sunlitLeavesMat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.85, flatShading: true }); // Olive Green
+    // Foliage greens
+    const leavesMat1 = new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.85, flatShading: true });
+    const leavesMat2 = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.85, flatShading: true });
 
-    // Generate scattered 3D Trees flanking the forest path
-    for (let i = 0; i < 40; i++) {
-        const treeGroup = new THREE.Group();
-        
-        // 1. Trunk
+    // Spawn 22 floating sky islands alongside our runway at different heights!
+    for (let i = 0; i < 22; i++) {
+        const island = new THREE.Group();
+
+        // 1. Rocky cone underside
+        const rockGeo = new THREE.ConeGeometry(2.0, 3.2, 6);
+        const rock = new THREE.Mesh(rockGeo, rockMat);
+        rock.rotation.x = Math.PI; // Invert cone to point down
+        rock.position.y = -1.6;
+        island.add(rock);
+
+        // 2. Grassy cylinder surface top
+        const grassGeo = new THREE.CylinderGeometry(2.1, 2.1, 0.4, 6);
+        const grass = new THREE.Mesh(grassGeo, grassMat);
+        grass.position.y = 0;
+        island.add(grass);
+
+        // 3. Stacked pine tree growing on the island
+        const trunkGeo = new THREE.CylinderGeometry(0.12, 0.22, 2.5, 6);
         const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        trunk.position.y = 2.25;
-        treeGroup.add(trunk);
-        
-        // 2. Stacked Pine Foliage
-        const leafGeo1 = new THREE.ConeGeometry(1.6, 2.0, 5);
-        const leafGeo2 = new THREE.ConeGeometry(1.2, 1.6, 5);
-        const leafGeo3 = new THREE.ConeGeometry(0.8, 1.2, 5);
-        
-        const isSunlit = Math.random() < 0.3;
-        const leafMat = isSunlit ? sunlitLeavesMat : (Math.random() < 0.5 ? leavesMat1 : leavesMat2);
-        
+        trunk.position.y = 1.25;
+        island.add(trunk);
+
+        const leafGeo1 = new THREE.ConeGeometry(1.0, 1.3, 5);
+        const leafGeo2 = new THREE.ConeGeometry(0.75, 1.0, 5);
+        const leafMat = Math.random() < 0.5 ? leavesMat1 : leavesMat2;
+
         const leaves1 = new THREE.Mesh(leafGeo1, leafMat);
-        leaves1.position.y = 3.6;
-        treeGroup.add(leaves1);
+        leaves1.position.y = 2.0;
+        island.add(leaves1);
 
         const leaves2 = new THREE.Mesh(leafGeo2, leafMat);
-        leaves2.position.y = 4.8;
-        treeGroup.add(leaves2);
+        leaves2.position.y = 2.8;
+        island.add(leaves2);
 
-        const leaves3 = new THREE.Mesh(leafGeo3, leafMat);
-        leaves3.position.y = 5.8;
-        treeGroup.add(leaves3);
-
-        // Position on left or right flanks
+        // Position - float them alongside path
         const side = Math.random() < 0.5 ? -1 : 1;
-        const xPos = side * (5.5 + Math.random() * 25);
+        const xPos = side * (6.5 + Math.random() * 20);
+        const yPos = 1.0 + Math.random() * 11.0; // Dynamic sky altitude
         const zPos = -Math.random() * 450 - 50;
-        
-        // Random scaling for natural variety
-        const scaleVal = 0.8 + Math.random() * 0.7;
-        treeGroup.scale.set(scaleVal, scaleVal, scaleVal);
-        treeGroup.position.set(xPos, 0, zPos);
-        
-        scene.add(treeGroup);
-        trees.push({
-            mesh: treeGroup,
+
+        // Apply scale variety
+        const scaleVal = 0.8 + Math.random() * 0.8;
+        island.scale.set(scaleVal, scaleVal, scaleVal);
+        island.position.set(xPos, yPos, zPos);
+
+        scene.add(island);
+        skyIslands.push({
+            mesh: island,
             side: side,
             scale: scaleVal,
-            originalX: xPos
+            originalX: xPos,
+            yPos: yPos
         });
     }
 
-    // 3. Spawning Magical Floating Sun Pollen (Sunlit floating sparkles)
+    // 4. Spawning Magical Floating Sun Pollen (Sunlit floating sparkles)
     const pGeo = new THREE.SphereGeometry(0.08, 6, 6);
     const pMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
     
@@ -350,7 +356,7 @@ function spawnSparks3D(x, y, z, color) {
     }
 }
 
-// --- 3D PLAYER CLASS WITH 3-LANE HORIZONTAL STEERING ---
+// --- 3D PLAYER CLASS: Sleek Space Ninja with Dynamic Wind-Reactive Neon Cape ("odamni o'zgartir") ---
 class Player3D {
     constructor() {
         this.group = new THREE.Group();
@@ -377,57 +383,76 @@ class Player3D {
         this.height = 1.6;
         this.depth = 1.0;
 
-        this.buildRobotMesh();
+        this.buildNinjaMesh();
     }
 
-    buildRobotMesh() {
-        // High-quality materials
-        const skinMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3, metalness: 0.7 });
-        const neonGreenMat = new THREE.MeshStandardMaterial({ color: COLOR_GREEN, emissive: COLOR_GREEN, emissiveIntensity: 0.8 });
-        const cyberMat = new THREE.MeshStandardMaterial({ color: COLOR_CYAN, emissive: COLOR_CYAN, emissiveIntensity: 0.5 });
+    buildNinjaMesh() {
+        // Ninja-themed sleek cyber materials
+        const suiteMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.15, metalness: 0.9 }); // Sleek black suit
+        const neonGreenMat = new THREE.MeshStandardMaterial({ color: COLOR_GREEN, emissive: COLOR_GREEN, emissiveIntensity: 0.9 });
+        const cyberMat = new THREE.MeshStandardMaterial({ color: COLOR_CYAN, emissive: COLOR_CYAN, emissiveIntensity: 0.8 });
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.7 });
         
-        // 1. Torso
-        const torsoGeo = new THREE.BoxGeometry(0.75, 0.9, 0.48);
-        this.torso = new THREE.Mesh(torsoGeo, skinMat);
-        this.torso.position.y = 1.0;
+        // 1. Torso (Slim sleek armor plate)
+        const torsoGeo = new THREE.BoxGeometry(0.55, 0.85, 0.42);
+        this.torso = new THREE.Mesh(torsoGeo, suiteMat);
+        this.torso.position.y = 0.95;
         this.group.add(this.torso);
 
-        // Core light
-        const coreGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.1, 8);
+        // Core light emblem on chest
+        const coreGeo = new THREE.SphereGeometry(0.12, 8, 8);
         this.chestCore = new THREE.Mesh(coreGeo, neonGreenMat);
-        this.chestCore.rotation.x = Math.PI / 2;
-        this.chestCore.position.set(0, 1.1, 0.25);
+        this.chestCore.position.set(0, 1.05, 0.22);
         this.group.add(this.chestCore);
 
-        // 2. Head
-        const headGeo = new THREE.BoxGeometry(0.42, 0.42, 0.42);
-        this.head = new THREE.Mesh(headGeo, skinMat);
-        this.head.position.y = 1.65;
+        // 2. Sleek Space Helmet (Sphere instead of cylinder robot)
+        const helmetGeo = new THREE.SphereGeometry(0.24, 12, 12);
+        this.head = new THREE.Mesh(helmetGeo, skinMat);
+        this.head.position.y = 1.56;
         this.group.add(this.head);
 
-        // Visor
-        const visorGeo = new THREE.BoxGeometry(0.46, 0.12, 0.15);
+        // Cyber round Visor plate
+        const visorGeo = new THREE.BoxGeometry(0.28, 0.1, 0.22);
         this.visor = new THREE.Mesh(visorGeo, cyberMat);
-        this.visor.position.set(0, 1.7, 0.16);
+        this.visor.position.set(0, 1.58, 0.15);
         this.group.add(this.visor);
 
-        // 3. Limbs
-        const limbGeo = new THREE.BoxGeometry(0.18, 0.5, 0.18);
+        // 3. Ninja flowing neon green cape (Superhero cape!)
+        const capeGeo = new THREE.PlaneGeometry(0.55, 1.25);
+        const capeMat = new THREE.MeshStandardMaterial({
+            color: COLOR_GREEN,
+            emissive: COLOR_GREEN,
+            emissiveIntensity: 0.9,
+            side: THREE.DoubleSide,
+            roughness: 0.35
+        });
         
-        this.leftArm = new THREE.Mesh(limbGeo, neonGreenMat);
-        this.leftArm.position.set(-0.52, 1.0, 0);
+        // Pivot group to rotate cape from the top
+        this.capePivot = new THREE.Group();
+        this.capePivot.position.set(0, 1.3, -0.22); // Fasten on shoulders
+        this.group.add(this.capePivot);
+        
+        this.cape = new THREE.Mesh(capeGeo, capeMat);
+        this.cape.position.y = -0.62; // Center offset to pivot correctly
+        this.capePivot.add(this.cape);
+
+        // 4. Slim athletic joints & limbs
+        const limbGeo = new THREE.BoxGeometry(0.14, 0.52, 0.14);
+        
+        this.leftArm = new THREE.Mesh(limbGeo, cyberMat);
+        this.leftArm.position.set(-0.4, 0.9, 0);
         this.group.add(this.leftArm);
 
-        this.rightArm = new THREE.Mesh(limbGeo, neonGreenMat);
-        this.rightArm.position.set(0.52, 1.0, 0);
+        this.rightArm = new THREE.Mesh(limbGeo, cyberMat);
+        this.rightArm.position.set(0.4, 0.9, 0);
         this.group.add(this.rightArm);
 
-        this.leftLeg = new THREE.Mesh(limbGeo, skinMat);
-        this.leftLeg.position.set(-0.22, 0.35, 0);
+        this.leftLeg = new THREE.Mesh(limbGeo, suiteMat);
+        this.leftLeg.position.set(-0.18, 0.32, 0);
         this.group.add(this.leftLeg);
 
-        this.rightLeg = new THREE.Mesh(limbGeo, skinMat);
-        this.rightLeg.position.set(0.22, 0.35, 0);
+        this.rightLeg = new THREE.Mesh(limbGeo, suiteMat);
+        this.rightLeg.position.set(0.18, 0.32, 0);
         this.group.add(this.rightLeg);
     }
 
@@ -509,11 +534,37 @@ class Player3D {
         const currentTargetX = LANES[this.currentLane + 1];
         this.group.position.x += (currentTargetX - this.group.position.x) * this.laneSpeed * dt;
 
-        // running leg swings
+        // Running swing anim time
         this.animTime += dt * gameSpeed * 0.35;
         
+        // 1. DYNAMIC WIND-REACTIVE CAPE ANIMATION! (Hilpirab turadigan kiyim!)
         if (this.isSliding) {
-            // Slide sparks
+            // Flatten cape completely flat when sliding
+            this.capePivot.rotation.x = -Math.PI / 3;
+            this.capePivot.rotation.y = 0;
+            this.capePivot.rotation.z = 0;
+        } else if (this.isJumping) {
+            // Fold and flap cape down on jump ascent/descent
+            this.capePivot.rotation.x = Math.PI / 2.5 + Math.sin(this.animTime * 1.8) * 0.1;
+            this.capePivot.rotation.y = 0;
+            this.capePivot.rotation.z = 0;
+        } else {
+            // Normal running flow: Waving cape raises HIGHER the faster you run! (wind drag!)
+            const windFactor = (gameSpeed - 38) * 0.005; // Wind lift offset
+            this.capePivot.rotation.x = Math.PI / 6 + Math.sin(this.animTime * 1.5) * 0.16 + windFactor;
+            
+            // Subtle roll wave
+            this.capePivot.rotation.z = Math.sin(this.animTime * 0.85) * 0.05;
+        }
+
+        // 2. Limbs oscillation
+        if (this.isSliding) {
+            // Slide limbs
+            this.leftLeg.rotation.x = 0;
+            this.rightLeg.rotation.x = 0;
+            this.leftArm.rotation.x = 0.4;
+            this.rightArm.rotation.x = 0.4;
+            
             if (Math.random() < 0.3) {
                 particles.push(new Particle3D(
                     this.group.position.x + (Math.random() - 0.5) * 0.4,
@@ -537,8 +588,8 @@ class Player3D {
             this.leftArm.rotation.x = -swing * 0.8;
             this.rightArm.rotation.x = swing * 0.8;
 
-            this.torso.position.y = 1.0 + Math.abs(swing) * 0.08;
-            this.head.position.y = 1.65 + Math.abs(swing) * 0.06;
+            this.torso.position.y = 0.95 + Math.abs(swing) * 0.08;
+            this.head.position.y = 1.56 + Math.abs(swing) * 0.06;
         }
     }
 }
@@ -548,12 +599,7 @@ class Obstacle3D {
     constructor() {
         this.z = -280; 
         this.lane = Math.floor(Math.random() * 3) - 1; // Random Lane: -1 (Left), 0 (Center), 1 (Right)
-        
-        // 0: LOW spiked block (jump over / lane steer)
-        // 1: HIGH hanging laser beam (slide under / lane steer)
-        // 2: TALL neon electric grid wall (double-jump over / lane steer)
         this.type = Math.floor(Math.random() * 3);
-        
         this.dodged = false;
 
         this.buildObstacleMesh();
@@ -582,7 +628,7 @@ class Obstacle3D {
         } 
         
         else if (this.type === 1) {
-            // Suspended horizontal neon laser gate (covers only this lane!)
+            // Suspended horizontal neon laser gate
             this.width = 2.6;
             this.height = 0.35;
             this.depth = 0.35;
@@ -657,19 +703,19 @@ function checkCollision3D(p, o) {
     const pZ = p.group.position.z;
     const pX = p.group.position.x;
     
-    // 1. Z-axis overlapping check
+    // Z-axis overlapping
     const halfD = o.depth / 2;
     if (Math.abs(o.z - pZ) > halfD + 0.3) {
         return false;
     }
 
-    // 2. X-axis overlapping check
+    // X-axis overlapping
     const oX = LANES[o.lane + 1];
     if (Math.abs(pX - oX) > (p.width / 2 + o.width / 2 - 0.25)) {
         return false;
     }
 
-    // 3. Y-axis height checks
+    // Y-axis height checks
     if (o.type === 0) {
         return (p.y < o.height);
     } 
@@ -690,6 +736,7 @@ function steerLeft() {
     }
 }
 
+// Mobile left steering bind
 function steerRight() {
     if (gameState === 'PLAYING') {
         player.steerRight();
@@ -793,7 +840,6 @@ function gameOver() {
     gameState = 'GAMEOVER';
     cameraShake = 1.9;
     
-    // Spawn red sparks representing a system crash
     spawnSparks3D(player.group.position.x, player.group.position.y + 0.8, player.group.position.z, COLOR_RED);
     
     if (navigator.vibrate) {
@@ -805,7 +851,7 @@ function gameOver() {
     
     if (finalScore > highScore) {
         highScore = finalScore;
-        localStorage.setItem('cyber_forest_day_highscore', highScore);
+        localStorage.setItem('cyber_sky_high_highscore', highScore);
         highScoreEl.textContent = String(highScore).padStart(5, '0');
         newRecordTag.classList.remove('hidden');
     } else {
@@ -835,24 +881,27 @@ function tick() {
             groundPath.material.map.offset.y -= gameSpeed * 0.00045 * (dt / 0.016);
         }
 
-        // 2. Parallax forest trees loop
-        trees.forEach(t => {
+        // 2. Parallax 3D Floating Sky Islands loop ("daraxt osmonda bo'lib")
+        skyIslands.forEach(t => {
             t.mesh.position.z += gameSpeed * 0.45 * dt;
+            // Float up and down slightly for mystical realistic effect
+            t.mesh.position.y = t.yPos + Math.sin(clock.getElapsedTime() * 0.6 + t.originalX) * 0.18;
+
             if (t.mesh.position.z > 25) {
                 t.mesh.position.z = -450 - Math.random() * 50;
-                t.mesh.position.x = t.side * (5.5 + Math.random() * 25);
+                t.mesh.position.x = t.side * (6.5 + Math.random() * 20);
+                t.yPos = 1.0 + Math.random() * 11.0;
             }
         });
 
-        // 3. Parallax drifting Clouds loop (Day edition!)
+        // 3. Parallax drifting Clouds loop
         clouds.forEach(c => {
-            c.mesh.position.z += gameSpeed * 0.42 * dt * c.speed; // Drift slightly slower than running speed
+            c.mesh.position.z += gameSpeed * 0.42 * dt * c.speed; 
             
-            // Loop cloud back to the far distance
             if (c.mesh.position.z > 40) {
                 c.mesh.position.z = -450 - Math.random() * 80;
                 c.mesh.position.x = (Math.random() - 0.5) * 60;
-                c.mesh.position.y = 14 + Math.random() * 8;
+                c.mesh.position.y = 16 + Math.random() * 8;
             }
         });
 
