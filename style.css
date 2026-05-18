@@ -531,3 +531,53 @@ canvas {
         display: flex;
     }
 }
+
+/* Glassmorphic Alert Banner (Xabarlar!) */
+.alert-banner {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(3, 8, 5, 0.85);
+    border: 2px solid var(--neon-cyan);
+    box-shadow: 0 0 20px var(--neon-cyan);
+    padding: 12px 30px;
+    border-radius: 14px;
+    z-index: 10;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    animation: alert-slide 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.alert-banner.hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+}
+
+.alert-banner span {
+    font-family: var(--font-gaming);
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--text-light);
+    text-shadow: 0 0 5px currentColor;
+    white-space: nowrap;
+}
+
+/* Color thematic alerts */
+.alert-cyan { border-color: var(--neon-cyan); box-shadow: 0 0 20px var(--neon-cyan); }
+.alert-cyan span { color: var(--neon-cyan); }
+
+.alert-green { border-color: var(--neon-green); box-shadow: 0 0 20px var(--neon-green); }
+.alert-green span { color: var(--neon-green); }
+
+.alert-pink { border-color: var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink); }
+.alert-pink span { color: var(--neon-pink); }
+
+.alert-gold { border-color: var(--neon-gold); box-shadow: 0 0 20px var(--neon-gold); }
+.alert-gold span { color: var(--neon-gold); }
+
+@keyframes alert-slide {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+    100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
