@@ -2,7 +2,8 @@
  * Cyber City Parkour 3D - Breathtaking 3D WebGL Neon Runner
  * Valley Arcade Grand City Edition: Endless Dark Grid Ground, Glowing Side Neon Lampposts,
  * Procedural Skyscrapers & Apartment Blocks (Domlar!) with glowing window grids,
- * Synthesized 8-Bit Retro Arcade Music & Sounds Engine (Muzika ham bo'lsin!),
+ * Advanced Polyphonic 8-Bit Retro BGM & SFX Sound Engine (Muzika ham bo'lsin!),
+ * Flying Jetpack Power-Up Mystery Box (Uchadigan Quti!), Sky Coins,
  * Sleek Oncoming Obstacles (Spinning Plasma Mines, Cyber Laser Warning Arches, Holographic Forcefields),
  * Cyber Katana, Dual Jetpacks, Abundant Gold Coins, 3D Collectible Fruits/Cherries, 
  * Flapping Cyber-Birds, Dynamic Day-Night Cycle (Tun va yorug' bo'lsin!),
@@ -49,7 +50,7 @@ const mobileRightBtn = document.getElementById('mobileRightBtn');
 const mobileSlideBtn = document.getElementById('mobileSlideBtn');
 const mobileJumpBtn = document.getElementById('mobileJumpBtn');
 
-// --- SYNTHESIZED 8-BIT RETRO ARCADE SOUND ENGINE (Web Audio API!) ---
+// --- SYNTHESIZED ADVANCED POLYPHONIC RETRO ARCADE SOUND ENGINE ---
 class ArcadeSoundEngine {
     constructor() {
         this.ctx = null;
@@ -58,21 +59,33 @@ class ArcadeSoundEngine {
         
         // Loop timeline parameters
         this.bgmInterval = null;
-        this.tempo = 135; // BPM
+        this.tempo = 142; // Upbeat tempo!
         this.noteIndex = 0;
         
-        // Classic 8-Bit Cyber-Synth bass arpeggio notes in C-Minor
-        this.bassNotes = [
-            130.81, 155.56, 196.00, 233.08, // C3, Eb3, G3, Bb3
-            261.63, 233.08, 196.00, 155.56, // C4, Bb3, G3, Eb3
-            110.00, 130.81, 164.81, 196.00, // A2, C3, E3, G3 (Shift chord)
-            220.00, 196.00, 164.81, 130.81  // A3, G3, E3, C3
+        // Polyphonic sound channels: Bass, Chord pads, Hi-hat, and Lead melodies!
+        this.bassSequence = [
+            65.41,  98.00,  130.81, 98.00,  // C2, G2, C3, G2
+            77.78,  116.54, 155.56, 116.54, // Eb2, Bb2, Eb3, Bb2
+            87.31,  130.81, 174.61, 130.81, // F2, C3, F3, C3
+            98.00,  146.83, 196.00, 146.83  // G2, D3, G3, D3
         ];
         
-        // Melodic high neon retro leads
-        this.leadNotes = [
-            0, 0, 523.25, 0, 587.33, 0, 659.25, 783.99, // C5, D5, E5, G5
-            0, 0, 783.99, 0, 698.46, 0, 659.25, 523.25  // G5, F5, E5, C5
+        this.chordSequence = [
+            [130.81, 155.56, 196.00], // C-Minor chord swell (C3+Eb3+G3)
+            [130.81, 155.56, 196.00],
+            [155.56, 196.00, 233.08], // Eb-Major chord swell (Eb3+G3+Bb3)
+            [155.56, 196.00, 233.08],
+            [174.61, 207.65, 261.63], // F-Minor chord swell (F3+Ab3+C4)
+            [174.61, 207.65, 261.63],
+            [196.00, 246.94, 293.66], // G-Major chord swell (G3+B3+D4)
+            [196.00, 246.94, 293.66]
+        ];
+
+        this.leadSequence = [
+            523.25, 587.33, 659.25, 783.99, // C5, D5, E5, G5
+            880.00, 783.99, 659.25, 587.33, // A5, G5, E5, D5
+            698.46, 783.99, 880.00, 1046.50, // F5, G5, A5, C6
+            1174.66, 1046.50, 880.00, 783.99 // D6, C6, A5, G5
         ];
     }
 
@@ -90,16 +103,25 @@ class ArcadeSoundEngine {
         this.bgmInterval = setInterval(() => {
             if (!this.isPlaying || this.isMuted) return;
             
-            // 1. Play synthesized triangle 8-bit retro arpeggiator bassline
-            const bassFreq = this.bassNotes[this.noteIndex % this.bassNotes.length];
-            this.playSynthesizedTone(bassFreq, 'triangle', noteLength * 0.9, 0.12);
+            const bassFreq = this.bassSequence[this.noteIndex % this.bassSequence.length];
+            this.playSynthesizedTone(bassFreq, 'triangle', noteLength * 0.95, 0.16);
 
-            // 2. Play synthesized square high lead melody on alternate beats
+            if (this.noteIndex % 4 === 0) {
+                const chord = this.chordSequence[Math.floor(this.noteIndex / 4) % this.chordSequence.length];
+                chord.forEach(freq => {
+                    this.playSynthesizedTone(freq, 'sine', noteLength * 3.6, 0.04);
+                });
+            }
+
+            // Upbeat hi-hat white noise click emulation (Hi-hat beats!)
+            if (this.noteIndex % 2 === 1) {
+                this.playHiHatSFX(noteLength * 0.25);
+            }
+
+            // High heroic retro lead arpeggio sequence
             if (this.noteIndex % 2 === 0) {
-                const leadFreq = this.leadNotes[Math.floor(this.noteIndex / 2) % this.leadNotes.length];
-                if (leadFreq > 0) {
-                    this.playSynthesizedTone(leadFreq, 'square', noteLength * 0.8, 0.05);
-                }
+                const leadFreq = this.leadSequence[Math.floor(this.noteIndex / 2) % this.leadSequence.length];
+                this.playSynthesizedTone(leadFreq, 'square', noteLength * 0.75, 0.06);
             }
 
             this.noteIndex++;
@@ -136,7 +158,6 @@ class ArcadeSoundEngine {
     playSynthesizedTone(frequency, type, duration, volume) {
         if (!this.ctx || this.isMuted) return;
         
-        // Audio Node setup
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         
@@ -144,8 +165,26 @@ class ArcadeSoundEngine {
         osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
         
         gain.gain.setValueAtTime(volume, this.ctx.currentTime);
-        // Retro envelope decay curve
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+
+    playHiHatSFX(duration) {
+        if (!this.ctx || this.isMuted) return;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(10000, this.ctx.currentTime); // High pitch click
+        
+        gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
         
         osc.connect(gain);
         gain.connect(this.ctx.destination);
@@ -162,9 +201,8 @@ class ArcadeSoundEngine {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         
-        osc.type = 'triangle'; // Warm 8-bit sound
+        osc.type = 'triangle'; 
         osc.frequency.setValueAtTime(140, this.ctx.currentTime);
-        // Ascending frequency sweep (Jump sound!)
         osc.frequency.exponentialRampToValueAtTime(750, this.ctx.currentTime + 0.16);
         
         gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
@@ -186,7 +224,6 @@ class ArcadeSoundEngine {
         
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(450, this.ctx.currentTime);
-        // Descending sweeping sound (Slide down!)
         osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.22);
         
         gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
@@ -203,7 +240,6 @@ class ArcadeSoundEngine {
         this.init();
         if (this.isMuted) return;
         
-        // Classic E6 then B6 square arpeggio chime!
         this.playSynthesizedTone(1318.51, 'square', 0.06, 0.08); // E6
         setTimeout(() => {
             this.playSynthesizedTone(1975.53, 'square', 0.14, 0.08); // B6
@@ -214,8 +250,7 @@ class ArcadeSoundEngine {
         this.init();
         if (this.isMuted) return;
         
-        // Triumphant 8-bit major arpeggio chime!
-        const arpeggio = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const arpeggio = [523.25, 659.25, 783.99, 1046.50]; 
         arpeggio.forEach((freq, i) => {
             setTimeout(() => {
                 this.playSynthesizedTone(freq, 'square', 0.15, 0.06);
@@ -223,11 +258,24 @@ class ArcadeSoundEngine {
         });
     }
 
+    playPowerUpSFX() {
+        this.init();
+        if (this.isMuted) return;
+        
+        // Epic hyper pitch rise arpeggio (Mystery Box fly SFX!)
+        const flightChime = [440, 554.37, 659.25, 880, 1109.73, 1318.51, 1760];
+        flightChime.forEach((freq, i) => {
+            setTimeout(() => {
+                this.playSynthesizedTone(freq, 'square', 0.18, 0.09);
+            }, i * 45);
+        });
+    }
+
     playLevelUpSFX() {
         this.init();
         if (this.isMuted) return;
         
-        const chords = [587.33, 739.99, 880.00, 1174.66]; // D5, F#5, A5, D6 Major Chord Sparkle
+        const chords = [587.33, 739.99, 880.00, 1174.66]; 
         chords.forEach((freq, i) => {
             setTimeout(() => {
                 this.playSynthesizedTone(freq, 'square', 0.25, 0.08);
@@ -244,7 +292,6 @@ class ArcadeSoundEngine {
         
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(260, this.ctx.currentTime);
-        // Low explosive descending rumbling noise sweep
         osc.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + 0.45);
         
         gain.gain.setValueAtTime(0.28, this.ctx.currentTime);
@@ -261,11 +308,10 @@ class ArcadeSoundEngine {
         this.init();
         if (this.isMuted) return;
         
-        // Grand electronic fanfare parade!
         const notes = [
             { f: 523.25, d: 0.1 }, { f: 523.25, d: 0.1 }, { f: 523.25, d: 0.1 },
             { f: 523.25, d: 0.25 }, { f: 659.25, d: 0.25 }, { f: 587.33, d: 0.25 },
-            { f: 659.25, d: 0.15 }, { f: 783.99, d: 0.4 } // C5-C5-C5-C5-E5-D5-E5-G5
+            { f: 659.25, d: 0.15 }, { f: 783.99, d: 0.4 } 
         ];
         
         let cumulativeDelay = 0;
@@ -302,6 +348,13 @@ let coinGroupTimer = 0;
 let fruitTimer = 0; 
 let cameraShake = 0;
 
+// Power-up State parameters (Uchadigan Quti!)
+let powerBoxes = [];
+let powerBoxTimer = 0;
+let isFlyingMode = false;
+let flightTimer = 0;
+const FLIGHT_DURATION = 5.0; // Fly high for 5 seconds!
+
 // Entities
 let player;
 let obstacles = [];
@@ -314,7 +367,7 @@ let lampposts = []; // Neon Lampposts flanking the runway (Yonbosh svetlar!)
 let clouds = [];
 let pollen = [];
 let particles = [];
-let victoryGate = null; // Finish Gate (Final!)
+let victoryGate = null; 
 let groundPath;
 let massiveFloor;
 
@@ -513,13 +566,12 @@ function create3DClouds() {
     }
 }
 
-// --- PROCEDURAL 3D NEON SKYSCRAPERS & RESIDENTIAL BLOCKS (Domlar ham qo'shildi!) ---
+// --- PROCEDURAL 3D NEON SKYSCRAPERS & RESIDENTIAL BLOCKS (Domlar!) ---
 class Building3D {
     constructor(side, z) {
-        this.side = side; // -1: Left side, 1: Right side
+        this.side = side; 
         this.z = z;
 
-        // Randomize visual model: Skyscraper (Tower) vs. Apartment block (Dom)
         this.modelType = Math.random() < 0.5 ? 'SKYSCRAPER' : 'APARTMENT_BLOCK';
 
         if (this.modelType === 'SKYSCRAPER') {
@@ -539,7 +591,6 @@ class Building3D {
     buildBuildingMesh() {
         this.group = new THREE.Group();
 
-        // 1. Core building block
         const blockGeo = new THREE.BoxGeometry(this.w, this.h, this.d);
         const blockMat = new THREE.MeshStandardMaterial({
             color: 0x090a0f, // Reflective cyber dark core
@@ -552,7 +603,6 @@ class Building3D {
         this.group.add(this.block);
 
         if (this.modelType === 'SKYSCRAPER') {
-            // Slim tower: Vertical corner light bars
             const stripeColors = [COLOR_CYAN, COLOR_PINK, COLOR_GREEN, COLOR_PURPLE];
             this.neonColor = stripeColors[Math.floor(Math.random() * stripeColors.length)];
 
@@ -585,7 +635,6 @@ class Building3D {
                 emissiveIntensity: 1.6
             });
 
-            // Populate rows/columns of glowing window planes
             const cols = 4;
             const rows = Math.floor(this.h / 1.8);
             const startX = -this.w / 2 + 0.8;
@@ -602,7 +651,6 @@ class Building3D {
             }
         }
 
-        // Penthouse neon crown at the top
         const crownGeo = new THREE.BoxGeometry(this.w * 0.85, 0.4, this.d * 0.85);
         const crownMat = new THREE.MeshStandardMaterial({
             color: COLOR_GOLD,
@@ -661,7 +709,7 @@ function create3DBuildings() {
     }
 }
 
-// --- NEON LAMPPOSTS CLASS (Yonboshda neon svetlar!) ---
+// --- NEON LAMPPOSTS CLASS ---
 class Lamppost3D {
     constructor(side, z) {
         this.side = side; 
@@ -729,11 +777,72 @@ function createNeonLampposts() {
     }
 }
 
+// --- 3D POWER-UP MYSTERY FLYING BOX CLASS (Uchadigan Quti!) ---
+class PowerBox3D {
+    constructor(lane, z) {
+        this.lane = lane;
+        this.z = z;
+        this.collected = false;
+
+        this.buildBoxMesh();
+    }
+
+    buildBoxMesh() {
+        this.group = new THREE.Group();
+
+        // 1. Sleek glassmorphic cyan neon box frame
+        const frameGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55);
+        const frameMat = new THREE.MeshStandardMaterial({
+            color: COLOR_CYAN,
+            emissive: COLOR_CYAN,
+            emissiveIntensity: 1.4,
+            wireframe: true
+        });
+        this.frame = new THREE.Mesh(frameGeo, frameMat);
+        this.group.add(this.frame);
+
+        // 2. High-energy gold spinning core
+        const coreGeo = new THREE.BoxGeometry(0.24, 0.24, 0.24);
+        const coreMat = new THREE.MeshStandardMaterial({
+            color: COLOR_GOLD,
+            emissive: COLOR_GOLD,
+            emissiveIntensity: 2.2,
+            metalness: 0.95,
+            roughness: 0.05
+        });
+        this.core = new THREE.Mesh(coreGeo, coreMat);
+        this.group.add(this.core);
+
+        const spawnX = LANES[this.lane + 1];
+        this.group.position.set(spawnX, 0.85, this.z);
+        scene.add(this.group);
+    }
+
+    update(dt, time) {
+        this.z += gameSpeed * dt;
+        this.group.position.z = this.z;
+
+        // Cool rotating mystery core animations
+        this.group.rotation.y += 3.2 * dt;
+        this.group.rotation.x += 1.5 * dt;
+        this.group.position.y = 0.85 + Math.sin(time * 6) * 0.08;
+    }
+
+    destroy() {
+        scene.remove(this.group);
+        this.frame.geometry.dispose();
+        this.core.geometry.dispose();
+        this.frame.material.dispose();
+        this.core.material.dispose();
+    }
+}
+
 // --- 3D COLLECTIBLE COINS CLASS ---
 class Coin3D {
-    constructor(lane, z) {
+    constructor(lane, z, height = 0.72) {
         this.lane = lane; 
         this.z = z;
+        this.height = height; // Can spawn high in the sky!
         this.collected = false;
 
         this.buildCoinMesh();
@@ -756,7 +865,7 @@ class Coin3D {
         this.group.add(this.mesh);
 
         const spawnX = LANES[this.lane + 1];
-        this.group.position.set(spawnX, 0.72, this.z); 
+        this.group.position.set(spawnX, this.height, this.z); 
         scene.add(this.group);
     }
 
@@ -779,6 +888,15 @@ function spawnCoinGroup() {
     
     for (let i = 0; i < 5; i++) {
         coins.push(new Coin3D(lane, startZ - (i * 6.0)));
+    }
+}
+
+function spawnSkyCoins() {
+    // Spawns a gorgeous double lane track of sky coins during fly mode!
+    const lane1 = Math.floor(Math.random() * 3) - 1;
+    const startZ = -280;
+    for (let i = 0; i < 6; i++) {
+        coins.push(new Coin3D(lane1, startZ - (i * 5.5), 6.2));
     }
 }
 
@@ -1163,8 +1281,9 @@ class Player3D {
         this.jetpackRight.position.x = 0.25;
         this.group.add(this.jetpackRight);
 
-        const flameGeo = new THREE.ConeGeometry(0.06, 0.32, 8);
-        flameGeo.translate(0, -0.16, 0); 
+        // Substantially larger hyper flame cones for fly mode!
+        const flameGeo = new THREE.ConeGeometry(0.12, 0.8, 8);
+        flameGeo.translate(0, -0.4, 0); 
         const flameMat = new THREE.MeshBasicMaterial({ color: COLOR_CYAN });
 
         this.flameLeft = new THREE.Mesh(flameGeo, flameMat);
@@ -1196,24 +1315,30 @@ class Player3D {
     }
 
     steerLeft() {
-        if (this.currentLane > -1) {
-            this.currentLane--;
-            this.targetX = LANES[this.currentLane + 1]; 
-            spawnSparks3D(this.group.position.x, this.y + 0.2, this.group.position.z, COLOR_CYAN);
-            audio.playSlideSFX();
+        if (gameState === 'PLAYING') {
+            if (this.currentLane > -1) {
+                this.currentLane--;
+                this.targetX = LANES[this.currentLane + 1]; 
+                spawnSparks3D(this.group.position.x, this.y + 0.2, this.group.position.z, COLOR_CYAN);
+                audio.playSlideSFX();
+            }
         }
     }
 
     steerRight() {
-        if (this.currentLane < 1) {
-            this.currentLane++;
-            this.targetX = LANES[this.currentLane + 1];
-            spawnSparks3D(this.group.position.x, this.y + 0.2, this.group.position.z, COLOR_CYAN);
-            audio.playSlideSFX();
+        if (gameState === 'PLAYING') {
+            if (this.currentLane < 1) {
+                this.currentLane++;
+                this.targetX = LANES[this.currentLane + 1];
+                spawnSparks3D(this.group.position.x, this.y + 0.2, this.group.position.z, COLOR_CYAN);
+                audio.playSlideSFX();
+            }
         }
     }
 
     jump() {
+        if (isFlyingMode) return; // Cannot jump during flying
+        
         if (!this.isJumping) {
             this.vy = this.jumpForce;
             this.isJumping = true;
@@ -1245,6 +1370,8 @@ class Player3D {
     }
 
     slide(active) {
+        if (isFlyingMode) return; 
+        
         if (active) {
             if (!this.isJumping) {
                 this.isSliding = true;
@@ -1262,23 +1389,51 @@ class Player3D {
     }
 
     update(dt) {
-        this.vy += this.gravity * dt;
-        this.y += this.vy * dt;
-
-        if (this.y <= 0.1) {
-            this.y = 0.1;
+        if (isFlyingMode) {
+            // Flying Mode: Glide player smoothly up to y = 6.2
+            this.y += (6.2 - this.y) * 8.5 * dt;
             this.vy = 0;
             this.isJumping = false;
             this.isDoubleJumping = false;
-            this.flameLeft.visible = false;
-            this.flameRight.visible = false;
-        } else {
+            
+            // Thrust flame fully visible!
             this.flameLeft.visible = true;
             this.flameRight.visible = true;
-            
-            const flicker = 0.8 + Math.random() * 0.55;
+            const flicker = 1.2 + Math.random() * 0.4;
             this.flameLeft.scale.y = flicker;
             this.flameRight.scale.y = flicker;
+            
+            // Spawn continuous engine sparks!
+            if (Math.random() < 0.38) {
+                particles.push(new Particle3D(
+                    this.group.position.x + (Math.random() - 0.5) * 0.3,
+                    this.y + 0.8,
+                    this.group.position.z - 0.25,
+                    (Math.random() - 0.5) * 4,
+                    -4 - Math.random() * 8,
+                    gameSpeed * 0.35,
+                    COLOR_CYAN, 0.08, 0.25
+                ));
+            }
+        } else {
+            // Standard runner physics
+            this.vy += this.gravity * dt;
+            this.y += this.vy * dt;
+
+            if (this.y <= 0.1) {
+                this.y = 0.1;
+                this.vy = 0;
+                this.isJumping = false;
+                this.isDoubleJumping = false;
+                this.flameLeft.visible = false;
+                this.flameRight.visible = false;
+            } else {
+                this.flameLeft.visible = true;
+                this.flameRight.visible = true;
+                const flicker = 0.8 + Math.random() * 0.55;
+                this.flameLeft.scale.y = flicker;
+                this.flameRight.scale.y = flicker;
+            }
         }
 
         if (!this.isSliding) {
@@ -1309,6 +1464,13 @@ class Player3D {
             this.leftArm.rotation.x = 0.6;
             this.rightArm.rotation.x = 0.6;
             this.capeGroup.rotation.x = 0.1;
+        } else if (isFlyingMode) {
+            // Cool aerial flying pose (legs extended back)
+            this.leftLeg.rotation.x = 0.8;
+            this.rightLeg.rotation.x = 0.8;
+            this.leftArm.rotation.x = -0.4;
+            this.rightArm.rotation.x = -0.4;
+            this.capeGroup.rotation.x = Math.PI / 2.2;
         } else {
             const swing = Math.sin(this.animTime);
             this.leftLeg.rotation.x = swing * 0.8;
@@ -1338,7 +1500,7 @@ class Player3D {
     }
 }
 
-// --- 3D VICTORY FINISH GATE CLASS WITH ROTATING PORTAL RING ---
+// --- 3D VICTORY FINISH GATE ---
 class VictoryGate3D {
     constructor(z) {
         this.z = z;
@@ -1374,7 +1536,7 @@ class VictoryGate3D {
         this.header.position.set(0, 6.0, 0);
         this.group.add(this.header);
 
-        // Huge rotating cyber portal ring above the gate!
+        // Rotating cyber portal ring above Victory gate
         const ringGeo = new THREE.TorusGeometry(2.2, 0.14, 8, 32);
         const ringMat = new THREE.MeshStandardMaterial({
             color: COLOR_PINK,
@@ -1420,7 +1582,7 @@ class VictoryGate3D {
     }
 }
 
-// --- ONCOMING OBSTACLES CLASS (Re-designed kelayotgan narsalar, zor bo'lsin!) ---
+// --- REDESIGNED PRESTIGE OBSTACLES (Plasma Mine, Cyber Warning Arch, Shimmering Forcefield!) ---
 class Obstacle3D {
     constructor() {
         this.z = -280; 
@@ -1435,12 +1597,10 @@ class Obstacle3D {
         this.group = new THREE.Group();
         
         if (this.type === 0) {
-            // Re-designed spike: Floating Spinning Neon Plasma Mine!
             this.width = 1.5;
             this.height = 0.85;
             this.depth = 1.5;
 
-            // Core sphere mine
             const mineCore = new THREE.Mesh(
                 new THREE.SphereGeometry(0.35, 8, 8),
                 new THREE.MeshStandardMaterial({ color: 0x111115, metalness: 0.9, roughness: 0.1 })
@@ -1448,7 +1608,6 @@ class Obstacle3D {
             mineCore.position.y = 0.5;
             this.group.add(mineCore);
 
-            // Orbiting pink energy torus
             this.torus = new THREE.Mesh(
                 new THREE.TorusGeometry(0.55, 0.08, 6, 16),
                 new THREE.MeshStandardMaterial({ color: COLOR_PINK, emissive: COLOR_PINK, emissiveIntensity: 1.6 })
@@ -1456,7 +1615,6 @@ class Obstacle3D {
             this.torus.position.y = 0.5;
             this.group.add(this.torus);
 
-            // Flashing warning antenna
             const ant = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.02, 0.02, 0.6),
                 new THREE.MeshStandardMaterial({ color: COLOR_GOLD, emissive: COLOR_GOLD, emissiveIntensity: 1.5 })
@@ -1466,7 +1624,6 @@ class Obstacle3D {
         } 
         
         else if (this.type === 1) {
-            // Re-designed Laser Hurdle: Laser Warning Archway with emblem!
             this.width = 2.6;
             this.height = 0.35;
             this.depth = 0.35;
@@ -1478,7 +1635,6 @@ class Obstacle3D {
             laserMesh.position.y = 2.05; 
             this.group.add(laserMesh);
 
-            // Glowing central warning emblem cone (Orange cone warning!)
             const emblemGeo = new THREE.ConeGeometry(0.18, 0.28, 3);
             const emblemMat = new THREE.MeshStandardMaterial({ color: COLOR_GOLD, emissive: COLOR_GOLD, emissiveIntensity: 1.8 });
             this.emblem = new THREE.Mesh(emblemGeo, emblemMat);
@@ -1502,12 +1658,10 @@ class Obstacle3D {
         } 
         
         else {
-            // Re-designed tall block: Holographic Energy Forcefield!
             this.width = 1.8;
             this.height = 1.95;
             this.depth = 1.1;
 
-            // Semi-transparent glowing purple energy core panel
             const panelGeo = new THREE.BoxGeometry(this.width - 0.1, this.height - 0.1, 0.1);
             const panelMat = new THREE.MeshStandardMaterial({
                 color: COLOR_PURPLE,
@@ -1522,7 +1676,6 @@ class Obstacle3D {
             this.panel.position.y = this.height / 2;
             this.group.add(this.panel);
 
-            // Glowing solid support wireframe outline border frame
             const frameGeo = new THREE.BoxGeometry(this.width, this.height, 0.2);
             const frameMat = new THREE.MeshStandardMaterial({
                 color: COLOR_PINK,
@@ -1544,7 +1697,6 @@ class Obstacle3D {
         this.z += gameSpeed * dt;
         this.group.position.z = this.z;
 
-        // Dynamic spinning for plasma mine
         if (this.type === 0 && this.torus) {
             this.torus.rotation.z += 4.5 * dt;
             this.torus.rotation.x += 1.8 * dt;
@@ -1564,6 +1716,8 @@ class Obstacle3D {
 
 // --- COLLISION DETECTION ---
 function checkCollision3D(p, o) {
+    if (isFlyingMode) return false; // Invincible while flying in sky!
+
     const pZ = p.group.position.z;
     const pX = p.group.position.x;
     
@@ -1597,13 +1751,15 @@ function checkCoinCollision(p, c) {
 
     const cX = LANES[c.lane + 1];
     const cZ = c.z;
-    const cY = 0.72; 
+    const cY = c.height; 
 
     const dist = Math.sqrt((pX - cX)**2 + (pY + 0.8 - cY)**2 + (pZ - cZ)**2);
     return dist < 1.05; 
 }
 
 function checkFruitCollision(p, f) {
+    if (isFlyingMode) return false; // Fruits spawn only on ground
+
     const pZ = p.group.position.z;
     const pX = p.group.position.x;
     const pY = p.group.position.y;
@@ -1616,39 +1772,44 @@ function checkFruitCollision(p, f) {
     return dist < 1.15; 
 }
 
+function checkPowerBoxCollision(p, pb) {
+    if (isFlyingMode) return false; // Cannot grab while already flying
+
+    const pZ = p.group.position.z;
+    const pX = p.group.position.x;
+    const pY = p.group.position.y;
+
+    const pbX = LANES[pb.lane + 1];
+    const pbZ = pb.z;
+    const pbY = 0.85;
+
+    const dist = Math.sqrt((pX - pbX)**2 + (pY + 0.8 - pbY)**2 + (pZ - pbZ)**2);
+    return dist < 1.15;
+}
+
 function transitionLevelTheme(level) {
     hudLevel.textContent = level;
 }
 
 // --- INPUT TRIGGERS ---
 function steerLeft() {
-    if (gameState === 'PLAYING') {
-        player.steerLeft();
-    }
+    player.steerLeft();
 }
 
 function steerRight() {
-    if (gameState === 'PLAYING') {
-        player.steerRight();
-    }
+    player.steerRight();
 }
 
 function triggerJump() {
-    if (gameState === 'PLAYING') {
-        player.jump();
-    }
+    player.jump();
 }
 
 function startSlide() {
-    if (gameState === 'PLAYING') {
-        player.slide(true);
-    }
+    player.slide(true);
 }
 
 function stopSlide() {
-    if (gameState === 'PLAYING') {
-        player.slide(false);
-    }
+    player.slide(false);
 }
 
 // Keyboard
@@ -1696,6 +1857,7 @@ function init() {
     obstacles.forEach(o => o.destroy());
     coins.forEach(c => c.destroy());
     fruits.forEach(f => f.destroy());
+    powerBoxes.forEach(pb => pb.destroy());
     hoverCars.forEach(hc => hc.destroy());
     birds.forEach(b => b.destroy());
     particles.forEach(p => p.destroy());
@@ -1712,16 +1874,19 @@ function init() {
     obstacleTimer = 0;
     coinGroupTimer = 0;
     fruitTimer = 0;
+    powerBoxTimer = 0;
     cameraShake = 0;
+    isFlyingMode = false;
+    flightTimer = 0;
     
     obstacles = [];
     coins = [];
     fruits = [];
+    powerBoxes = [];
     hoverCars = [];
     birds = [];
     particles = [];
 
-    // Reset player position & lane
     player.y = 0.1;
     player.vy = 0;
     player.currentLane = 0;
@@ -1748,8 +1913,6 @@ function startGame() {
     hud.classList.remove('hidden');
 
     showAlert("BOSHLADIK! NEON SHAHAR CHAQIRIQLARI!", "green");
-    
-    // Start loop electronic retro background music!
     audio.startBGM();
 }
 
@@ -1844,7 +2007,7 @@ function tick() {
     const time = clock.getElapsedTime();
 
     if (gameState === 'PLAYING') {
-        // --- REAL-TIME DYNAMIC DAY-NIGHT CYCLE (Tun va yorug' bo'lsin!) ---
+        // --- REAL-TIME DYNAMIC DAY-NIGHT CYCLE ---
         const cycleFactor = 0.5 + 0.5 * Math.sin(time * 0.125); 
 
         // 1. Interpolate Sky Background Color
@@ -1878,6 +2041,15 @@ function tick() {
             sunLight.intensity = 0.1 + 1.2 * cycleFactor;
         }
 
+        // --- FLIGHT TIMER LOGIC (Uchadigan quti mantiqi!) ---
+        if (isFlyingMode) {
+            flightTimer -= dt;
+            if (flightTimer <= 0) {
+                isFlyingMode = false;
+                showAlert("JETPACK REAKTIV TUGADI! ERGA QAYTAMIZ!", "pink");
+            }
+        }
+
         // --- DYNAMIC SCENE ELEMENT ACTIONS ---
 
         if (groundPath) {
@@ -1888,14 +2060,12 @@ function tick() {
         buildings.forEach(b => {
             b.update(dt);
             
-            // Fades in emissive brightness during night cycles!
             const emissiveMult = 1.6 * (1 - cycleFactor);
             if (b.stripe1 && b.stripe2) {
                 b.stripe1.material.emissiveIntensity = emissiveMult;
                 b.stripe2.material.emissiveIntensity = emissiveMult;
             }
 
-            // Apartment blocks (Domlar) glowing windows dim during day!
             if (b.windowGroup) {
                 b.windowGroup.traverse(w => {
                     if (w.isMesh) {
@@ -1977,10 +2147,64 @@ function tick() {
             }
         }
 
+        // Spawning Flying Mystery Power-up Boxes periodically! Every 12 seconds!
+        powerBoxTimer += dt;
+        if (powerBoxTimer >= 12.0 && distanceRun < LEVEL_DISTANCE_GOAL - 150) {
+            const lane = Math.floor(Math.random() * 3) - 1;
+            powerBoxes.push(new PowerBox3D(lane, -280));
+            powerBoxTimer = 0;
+        }
+
+        // Update and Collide Flying Power-Up Boxes
+        for (let i = powerBoxes.length - 1; i >= 0; i--) {
+            const pb = powerBoxes[i];
+            pb.update(dt, time);
+
+            if (checkPowerBoxCollision(player, pb)) {
+                pb.collected = true;
+                
+                isFlyingMode = true;
+                flightTimer = FLIGHT_DURATION;
+                
+                audio.playPowerUpSFX();
+                showAlert("UCHISH QUTISI! JETPACK REAKTIV KUCHI!", "gold");
+
+                // Trigger large cyan booster spark explosions!
+                for (let k = 0; k < 25; k++) {
+                    particles.push(new Particle3D(
+                        pb.group.position.x,
+                        pb.group.position.y,
+                        pb.group.position.z,
+                        (Math.random() - 0.5) * 16,
+                        Math.random() * 14 + 4,
+                        (Math.random() - 0.5) * 16,
+                        COLOR_CYAN, 0.15, 0.55
+                    ));
+                }
+
+                // Immediately spawn a track of Sky Coins high up!
+                spawnSkyCoins();
+
+                pb.destroy();
+                powerBoxes.splice(i, 1);
+                continue;
+            }
+
+            if (pb.z > 15) {
+                pb.destroy();
+                powerBoxes.splice(i, 1);
+            }
+        }
+
         // Spawning abundant gold coins! Every 1.65 seconds!
         coinGroupTimer += dt;
         if (coinGroupTimer >= 1.65 && distanceRun < LEVEL_DISTANCE_GOAL - 100) {
-            spawnCoinGroup();
+            if (isFlyingMode) {
+                // Spawn sky coin groups during flight mode!
+                spawnSkyCoins();
+            } else {
+                spawnCoinGroup();
+            }
             coinGroupTimer = 0;
         }
 
@@ -2133,15 +2357,14 @@ function tick() {
     } 
     
     else if (gameState === 'VICTORY') {
-        // --- EPIC SLOW-MOTION MATRIX CAMERA ZOOM SPIN ("final zo'r bo'lsin!") ---
-        const slowDt = dt * 0.12; // slow motion!
+        // --- EPIC SLOW-MOTION MATRIX CAMERA ZOOM SPIN ---
+        const slowDt = dt * 0.12; 
         
         if (victoryGate) {
             victoryGate.update(slowDt);
         }
         player.update(slowDt);
 
-        // Orbit camera around player Space Ninja in slow motion!
         camera.position.x = 8.5 * Math.sin(time * 0.45);
         camera.position.z = 8.5 * Math.cos(time * 0.45);
         camera.position.y = 2.8 + Math.sin(time * 0.2) * 1.5;
