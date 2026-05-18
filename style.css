@@ -90,6 +90,16 @@ canvas {
     box-shadow: 0 0 15px rgba(255, 190, 11, 0.1);
 }
 
+.coins-container {
+    border-color: rgba(255, 190, 11, 0.45);
+    box-shadow: 0 0 15px rgba(255, 190, 11, 0.15);
+}
+
+.level-container {
+    border-color: rgba(139, 0, 255, 0.45);
+    box-shadow: 0 0 15px rgba(139, 0, 255, 0.15);
+}
+
 .multiplier-container {
     border-color: rgba(0, 240, 255, 0.3);
     box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
@@ -118,6 +128,14 @@ canvas {
 
 #highScore {
     color: var(--neon-gold);
+}
+
+#hudCoins {
+    color: var(--neon-gold);
+}
+
+#hudLevel {
+    color: var(--neon-purple);
 }
 
 #comboText {
