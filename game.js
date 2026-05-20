@@ -479,6 +479,9 @@ const COLOR_SKY_BLUE = 0x5fa9f8;
 const COLOR_SUN_MIST = 0x9ed2ff;
 
 highScoreEl.textContent = String(highScore).padStart(5, '0');
+const menuHighScoreEl = document.getElementById('menuHighScore');
+if (menuHighScoreEl) menuHighScoreEl.textContent = String(highScore).padStart(5, '0');
+
 hudCoins.textContent = '000';
 hudLevel.textContent = '1';
 
@@ -2445,6 +2448,25 @@ function tick() {
         currentScoreEl.textContent = String(Math.floor(score)).padStart(5, '0');
     } 
     
+    else if (gameState === 'START') {
+        // Subway Surfers style idle animation on Start Menu!
+        if (player) {
+            player.animTime += dt * 0.5;
+            player.group.position.y = player.y + Math.sin(time * 3) * 0.15;
+            // Idle arms
+            player.leftArm.rotation.x = Math.sin(time * 3) * 0.1;
+            player.rightArm.rotation.x = Math.sin(time * 3 + Math.PI) * 0.1;
+        }
+        
+        // Front-facing dynamic hero camera
+        camera.position.x = 2.0;
+        camera.position.y = 1.4 + Math.sin(time * 0.8) * 0.1;
+        camera.position.z = 4.5; // In front of the player
+        if (player) {
+            camera.lookAt(player.group.position.x, player.group.position.y + 0.8, player.group.position.z);
+        }
+    }
+
     else if (gameState === 'VICTORY') {
         const slowDt = dt * 0.12; 
         
@@ -2470,7 +2492,7 @@ function tick() {
     }
 
     // Camera Follow Smooth Tracking with Lookahead
-    if (player && gameState !== 'VICTORY') {
+    if (player && gameState !== 'VICTORY' && gameState !== 'START') {
         const targetCamY = player.isSliding ? 2.8 : 4.2 + (player.y - 0.1) * 0.4;
         camera.position.y += (targetCamY - camera.position.y) * 0.1;
         
