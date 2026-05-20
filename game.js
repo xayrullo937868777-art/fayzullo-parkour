@@ -446,7 +446,6 @@ let player;
 let obstacles = [];
 let coins = [];
 let fruits = []; 
-let powerBoxes = [];
 let hoverCars = [];
 let birds = [];
 let buildings = []; // Skyscrapers & Domlar flanking cyber highway!
