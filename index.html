@@ -51,34 +51,31 @@
             <span id="alertText">SHAHARDAGI SARGŪZASHT!</span>
         </div>
 
-        <!-- Glassmorphic Start Screen Overlay -->
-        <div class="overlay" id="startScreen">
-            <div class="menu-card animate-glow">
-                <h1 class="game-title">NEON<span class="neon-green">CITY 3D</span></h1>
-                <p class="game-subtitle">NEON CITY RUNNER v5.0</p>
-                
-                <div class="instructions-card">
-                    <h3><i class="fas fa-gamepad"></i> BOSHQARISH TARTIBI:</h3>
-                    <div class="control-guides">
-                        <div class="guide-item">
-                            <span class="key"><i class="fas fa-arrow-left"></i></span> / <span class="key"><i class="fas fa-arrow-right"></i></span>
-                            <span class="guide-desc">CHAP / O'NG qatorga o'tish (A / D)</span>
-                        </div>
-                        <div class="guide-item">
-                            <span class="key">SPACE</span> / <span class="key"><i class="fas fa-arrow-up"></i></span>
-                            <span class="guide-desc">SAKRASH (W) / Double Jump va Jetpack</span>
-                        </div>
-                        <div class="guide-item">
-                            <span class="key"><i class="fas fa-arrow-down"></i></span>
-                            <span class="guide-desc">SIRPANISH (S) (Laser tagidan o'tish)</span>
-                        </div>
-                    </div>
-                    <p class="mobile-tip"><i class="fas fa-mobile-alt"></i> Telefonda: Chapda - Chap/O'ng, O'ngda - Sirpanish/Sakrash</p>
-                </div>
+        <!-- Glassmorphic Start Screen Overlay (SUBWAY SURFERS STYLE) -->
+        <div class="overlay start-overlay" id="startScreen" onclick="if(document.getElementById('startBtn')) document.getElementById('startBtn').click()">
+            <div class="menu-top">
+                <h1 class="game-title">NEON<span class="neon-green">CITY</span></h1>
+                <p class="game-subtitle">RUNNER 3D</p>
+            </div>
+            
+            <div class="menu-side-left">
+                <div class="menu-btn-icon"><i class="fas fa-gift"></i><span>SOVG'ALAR</span></div>
+                <div class="menu-btn-icon"><i class="fas fa-shopping-cart"></i><span>DO'KON</span></div>
+                <div class="menu-btn-icon"><i class="fas fa-user-ninja"></i><span>QAHRAMON</span></div>
+            </div>
 
-                <button class="btn btn-primary" id="startBtn">
-                    <i class="fas fa-play"></i> SHAHARDAGI SARGŪZASHT
-                </button>
+            <div class="menu-side-right">
+                <div class="menu-score-panel">
+                    <span class="panel-label">TOP SCORE</span>
+                    <span class="panel-value highlight-gold" id="menuHighScore">00000</span>
+                </div>
+                <div class="menu-btn-icon"><i class="fas fa-cog"></i><span>SOZLAMALAR</span></div>
+                <div class="menu-btn-icon"><i class="fas fa-trophy"></i><span>REYTING</span></div>
+            </div>
+
+            <div class="menu-bottom">
+                <h2 class="tap-to-play animate-pulse">O'YINNI BOSHLASH UCHUN EKRANNI BOSING!</h2>
+                <button class="hidden-btn" id="startBtn">START</button>
             </div>
         </div>
 
