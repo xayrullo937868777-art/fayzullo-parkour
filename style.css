@@ -166,9 +166,9 @@ canvas {
 
 /* SUBWAY SURFERS STYLE START MENU */
 .start-overlay {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    background: rgba(3, 8, 12, 0.6) !important; /* Semi-dark background for readability */
+    backdrop-filter: blur(2px) !important;
+    -webkit-backdrop-filter: blur(2px) !important;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
