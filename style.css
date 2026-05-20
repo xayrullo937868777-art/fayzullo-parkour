@@ -164,6 +164,119 @@ canvas {
     transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
+/* SUBWAY SURFERS STYLE START MENU */
+.start-overlay {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 30px 20px;
+}
+
+.menu-top {
+    text-align: center;
+    margin-top: 10vh;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+.menu-side-left {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.menu-side-right {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 15px;
+}
+
+.menu-btn-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(10, 15, 25, 0.6);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    backdrop-filter: blur(5px);
+}
+.menu-btn-icon i {
+    font-size: 22px;
+    color: var(--neon-cyan);
+    margin-bottom: 5px;
+}
+.menu-btn-icon span {
+    font-size: 9px;
+    font-weight: 800;
+    font-family: var(--font-gaming);
+    color: rgba(255, 255, 255, 0.9);
+}
+.menu-btn-icon:hover {
+    transform: scale(1.1);
+    background: rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+}
+
+.menu-score-panel {
+    background: rgba(10, 15, 25, 0.7);
+    border: 2px solid var(--neon-gold);
+    border-radius: 12px;
+    padding: 10px 15px;
+    text-align: right;
+    margin-bottom: 20px;
+    backdrop-filter: blur(5px);
+}
+.menu-score-panel .panel-label {
+    display: block;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.menu-score-panel .panel-value {
+    font-size: 24px;
+    font-family: var(--font-gaming);
+    font-weight: 900;
+}
+
+.menu-bottom {
+    text-align: center;
+    margin-bottom: 8vh;
+    width: 100%;
+}
+
+.tap-to-play {
+    font-family: var(--font-gaming);
+    font-size: 24px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 15px var(--neon-green), 0 0 30px var(--neon-green);
+    cursor: pointer;
+    letter-spacing: 1.5px;
+}
+
+.hidden-btn {
+    display: none;
+}
+
 .overlay.hidden {
     opacity: 0;
     visibility: hidden;
