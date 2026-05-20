@@ -483,6 +483,10 @@ highScoreEl.textContent = String(highScore).padStart(5, '0');
 const menuHighScoreEl = document.getElementById('menuHighScore');
 if (menuHighScoreEl) menuHighScoreEl.textContent = String(highScore).padStart(5, '0');
 
+let bankCoins = parseInt(localStorage.getItem('cyber_city_bank_coins')) || 0;
+let ownedSkins = JSON.parse(localStorage.getItem('cyber_city_owned_skins')) || ['DEFAULT'];
+let equippedSkin = localStorage.getItem('cyber_city_equipped_skin') || 'DEFAULT';
+
 hudCoins.textContent = '000';
 hudLevel.textContent = '1';
 
@@ -1296,10 +1300,27 @@ class Player3D {
     }
 
     buildSpaceNinjaMesh() {
-        const darkSuitsMat = new THREE.MeshStandardMaterial({ color: 0x1d2127, roughness: 0.4, metalness: 0.9 });
-        const neonGreenMat = new THREE.MeshStandardMaterial({ color: COLOR_GREEN, emissive: COLOR_GREEN, emissiveIntensity: 0.8 });
-        const neonPinkMat = new THREE.MeshStandardMaterial({ color: COLOR_PINK, emissive: COLOR_PINK, emissiveIntensity: 0.9 });
-        const cyanVisorMat = new THREE.MeshStandardMaterial({ color: COLOR_CYAN, emissive: COLOR_CYAN, emissiveIntensity: 1.0 });
+        let suitColor = 0x1d2127;
+        let capeColor = COLOR_GREEN;
+        let visorColor = COLOR_CYAN;
+        let stripeColor = COLOR_PINK;
+
+        if (equippedSkin === 'GOLDEN_SAMURAI') {
+            suitColor = 0xb8860b; // Gold
+            capeColor = COLOR_RED; 
+            visorColor = COLOR_GOLD; 
+            stripeColor = 0xffffff;
+        } else if (equippedSkin === 'CYBER_DEMON') {
+            suitColor = 0x050505; // Pitch Black
+            capeColor = COLOR_PURPLE; 
+            visorColor = COLOR_RED; 
+            stripeColor = 0xff0000;
+        }
+
+        const darkSuitsMat = new THREE.MeshStandardMaterial({ color: suitColor, roughness: 0.4, metalness: 0.9 });
+        const neonGreenMat = new THREE.MeshStandardMaterial({ color: capeColor, emissive: capeColor, emissiveIntensity: 0.8 });
+        const neonPinkMat = new THREE.MeshStandardMaterial({ color: stripeColor, emissive: stripeColor, emissiveIntensity: 0.9 });
+        const cyanVisorMat = new THREE.MeshStandardMaterial({ color: visorColor, emissive: visorColor, emissiveIntensity: 1.0 });
         const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.1, metalness: 0.95 });
 
         this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.9, 0.45), darkSuitsMat);
@@ -1930,6 +1951,76 @@ mobileJumpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); trigger
 mobileSlideBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startSlide(); });
 window.addEventListener('mouseup', () => { stopSlide(); });
 
+// --- SHOP LOGIC ---
+const shopScreen = document.getElementById('shopScreen');
+const shopBankCoins = document.getElementById('shopBankCoins');
+const shopBtns = document.querySelectorAll('.buy-skin-btn');
+
+function openShop() {
+    document.getElementById('startScreen').classList.add('hidden');
+    shopScreen.classList.remove('hidden');
+    updateShopUI();
+}
+
+function closeShop() {
+    shopScreen.classList.add('hidden');
+    document.getElementById('startScreen').classList.remove('hidden');
+    
+    // Rebuild player mesh to apply newly equipped skin on start screen!
+    if (player) {
+        player.destroy();
+        player = new Player3D();
+    }
+}
+
+function updateShopUI() {
+    shopBankCoins.textContent = bankCoins;
+    
+    shopBtns.forEach(btn => {
+        const skinId = btn.dataset.skin;
+        const price = parseInt(btn.dataset.price);
+        
+        if (equippedSkin === skinId) {
+            btn.textContent = "TANLANGAN";
+            btn.className = "buy-skin-btn equipped";
+        } else if (ownedSkins.includes(skinId)) {
+            btn.textContent = "TANLASH";
+            btn.className = "buy-skin-btn owned";
+        } else {
+            btn.innerHTML = `<i class="fas fa-coins text-gold"></i> ${price}`;
+            btn.className = "buy-skin-btn" + (bankCoins >= price ? " affordable" : " locked");
+        }
+    });
+}
+
+function handleSkinClick(skinId, price) {
+    if (ownedSkins.includes(skinId)) {
+        equippedSkin = skinId;
+        localStorage.setItem('cyber_city_equipped_skin', equippedSkin);
+        updateShopUI();
+    } else if (bankCoins >= price) {
+        bankCoins -= price;
+        ownedSkins.push(skinId);
+        localStorage.setItem('cyber_city_bank_coins', bankCoins);
+        localStorage.setItem('cyber_city_owned_skins', JSON.stringify(ownedSkins));
+        equippedSkin = skinId;
+        localStorage.setItem('cyber_city_equipped_skin', equippedSkin);
+        updateShopUI();
+        showAlert("YANGI SKIN SOTIB OLINDI!", "gold");
+    } else {
+        showAlert("TANGA YETARLI EMAS!", "red");
+    }
+}
+
+shopBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        handleSkinClick(btn.dataset.skin, parseInt(btn.dataset.price));
+    });
+});
+
+document.getElementById('shopBtn').addEventListener('click', (e) => { e.stopPropagation(); openShop(); });
+document.getElementById('closeShopBtn').addEventListener('click', closeShop);
+
 // --- GAME STATE FLOWS ---
 function init() {
     obstacles.forEach(o => o.destroy());
@@ -1984,6 +2075,10 @@ function init() {
 function startGame() {
     init();
     gameState = 'PLAYING';
+    
+    // UZOQLASHTIRILGAN KAMERA (Camera pushed back as requested!)
+    camera.position.set(0, 4.8, 12.0);
+    camera.lookAt(0, 1.2, 0);
     
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
@@ -2292,6 +2387,9 @@ function tick() {
                 c.collected = true;
                 
                 coinsCollected++;
+                bankCoins++;
+                localStorage.setItem('cyber_city_bank_coins', bankCoins);
+                
                 hudCoins.textContent = String(coinsCollected).padStart(3, '0');
                 
                 score += 50; 
