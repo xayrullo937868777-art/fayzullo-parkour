@@ -460,9 +460,8 @@ let massiveFloor;
 // Lights
 let ambientLight, sunLight;
 
-// Bounding lane coordinates (3 Lanes: Left, Center, Right)
-const LANE_WIDTH = 2.2;
-const LANES = [-LANE_WIDTH, 0, LANE_WIDTH];
+// Free Roam Road Width
+const ROAD_WIDTH = 28;
 
 // Color Palette
 const COLOR_GREEN = 0x39ff14;
@@ -551,30 +550,29 @@ function createEndlessAsphaltGround() {
 
 // Elevated Cyber highway with glowing neon lanes
 function createCyberHighway() {
-    const width = 10;
+    const width = ROAD_WIDTH;
     const length = 500;
     
     const pathCanvas = document.createElement('canvas');
-    pathCanvas.width = 128;
+    pathCanvas.width = 256;
     pathCanvas.height = 128;
     const pctx = pathCanvas.getContext('2d');
     
     pctx.fillStyle = '#06060a';
-    pctx.fillRect(0, 0, 128, 128);
+    pctx.fillRect(0, 0, 256, 128);
     
-    pctx.fillStyle = '#0b0c10';
-    pctx.fillRect(25, 0, 78, 128);
-    
-    pctx.strokeStyle = 'rgba(0, 240, 255, 0.35)'; // Cyan
-    pctx.lineWidth = 4;
+    // Draw multiple glowing neon lane dividers for the wide road
+    pctx.strokeStyle = 'rgba(0, 240, 255, 0.25)'; // Cyan
+    pctx.lineWidth = 2;
     pctx.beginPath();
-    pctx.moveTo(42, 0); pctx.lineTo(42, 128);
-    pctx.moveTo(86, 0); pctx.lineTo(86, 128);
+    for (let i = 1; i <= 6; i++) {
+        pctx.moveTo(i * 36, 0); pctx.lineTo(i * 36, 128);
+    }
     pctx.stroke();
 
-    pctx.strokeStyle = '#ff007f'; // Pink
-    pctx.lineWidth = 6;
-    pctx.strokeRect(0, 0, 128, 128);
+    pctx.strokeStyle = '#ff007f'; // Pink border
+    pctx.lineWidth = 8;
+    pctx.strokeRect(0, 0, 256, 128);
     
     const pathTexture = new THREE.CanvasTexture(pathCanvas);
     pathTexture.wrapS = THREE.RepeatWrapping;
@@ -595,7 +593,7 @@ function createCyberHighway() {
     groundPath.position.set(0, 0.02, -length / 3); // Elevated
     scene.add(groundPath);
 
-    const wireGeo = new THREE.CylinderGeometry(0.08, 0.08, length, 8);
+    const wireGeo = new THREE.CylinderGeometry(0.12, 0.12, length, 8);
     const wireMat = new THREE.MeshBasicMaterial({ color: COLOR_PINK });
     
     const wireLeft = new THREE.Mesh(wireGeo, wireMat);
@@ -747,7 +745,7 @@ class Building3D {
         this.crown.position.y = this.h + 0.2;
         this.group.add(this.crown);
 
-        this.x = this.side * (6.8 + Math.random() * 22);
+        this.x = this.side * (16.8 + Math.random() * 25); // Spawn further out to accommodate wide road
         this.group.position.set(this.x, 0, this.z);
         scene.add(this.group);
     }
@@ -833,7 +831,7 @@ class Lamppost3D {
         this.bulb.position.set(this.side * 1.2, 3.82, 0);
         this.group.add(this.bulb);
 
-        this.x = this.side * 5.1; 
+        this.x = this.side * (ROAD_WIDTH / 2 + 0.5); 
         this.group.position.set(this.x, 0, this.z);
         scene.add(this.group);
     }
@@ -865,8 +863,8 @@ function createNeonLampposts() {
 
 // --- 3D POWER-UP MYSTERY FLYING BOX CLASS (Uchadigan Quti!) ---
 class PowerBox3D {
-    constructor(lane, z) {
-        this.lane = lane;
+    constructor(x, z) {
+        this.x = x;
         this.z = z;
         this.collected = false;
 
@@ -897,8 +895,7 @@ class PowerBox3D {
         this.core = new THREE.Mesh(coreGeo, coreMat);
         this.group.add(this.core);
 
-        const spawnX = LANES[this.lane + 1];
-        this.group.position.set(spawnX, 0.85, this.z);
+        this.group.position.set(this.x, 0.85, this.z);
         scene.add(this.group);
     }
 
@@ -922,8 +919,8 @@ class PowerBox3D {
 
 // --- 3D COLLECTIBLE COINS CLASS ---
 class Coin3D {
-    constructor(lane, z, height = 0.72) {
-        this.lane = lane; 
+    constructor(x, z, height = 0.72) {
+        this.x = x; 
         this.z = z;
         this.height = height; 
         this.collected = false;
@@ -947,8 +944,7 @@ class Coin3D {
         this.mesh.rotation.x = Math.PI / 2; 
         this.group.add(this.mesh);
 
-        const spawnX = LANES[this.lane + 1];
-        this.group.position.set(spawnX, this.height, this.z); 
+        this.group.position.set(this.x, this.height, this.z); 
         scene.add(this.group);
     }
 
@@ -966,26 +962,26 @@ class Coin3D {
 }
 
 function spawnCoinGroup() {
-    const lane = Math.floor(Math.random() * 3) - 1;
+    const x = (Math.random() - 0.5) * (ROAD_WIDTH - 3);
     const startZ = -280;
     
     for (let i = 0; i < 5; i++) {
-        coins.push(new Coin3D(lane, startZ - (i * 6.0)));
+        coins.push(new Coin3D(x, startZ - (i * 6.0)));
     }
 }
 
 function spawnSkyCoins() {
-    const lane1 = Math.floor(Math.random() * 3) - 1;
+    const x = (Math.random() - 0.5) * (ROAD_WIDTH - 3);
     const startZ = -280;
     for (let i = 0; i < 6; i++) {
-        coins.push(new Coin3D(lane1, startZ - (i * 5.5), 6.2));
+        coins.push(new Coin3D(x, startZ - (i * 5.5), 6.2));
     }
 }
 
 // --- 3D COLLECTIBLE FRUITS CLASS ---
 class Fruit3D {
-    constructor(lane, z) {
-        this.lane = lane;
+    constructor(x, z) {
+        this.x = x;
         this.z = z;
         this.collected = false;
 
@@ -1020,8 +1016,7 @@ class Fruit3D {
         this.stem.position.set(0, 0.2, 0);
         this.group.add(this.stem);
 
-        const spawnX = LANES[this.lane + 1];
-        this.group.position.set(spawnX, 0.85, this.z); 
+        this.group.position.set(this.x, 0.85, this.z); 
         scene.add(this.group);
     }
 
@@ -1265,9 +1260,11 @@ class Player3D {
         this.gravity = -54; 
         this.jumpForce = 21.5;
         
-        this.currentLane = 0; 
-        this.targetX = 0;
-        this.laneSpeed = 16; 
+        // Free Roaming Steering Mechanics!
+        this.isSteeringLeft = false;
+        this.isSteeringRight = false;
+        this.steeringSpeed = 24.0; // High speed lateral movement
+        this.bankAngle = 0;
 
         this.isJumping = false;
         this.isDoubleJumping = false;
@@ -1395,25 +1392,15 @@ class Player3D {
         this.group.add(this.rightLeg);
     }
 
-    steerLeft() {
+    steerLeft(isActive) {
         if (gameState === 'PLAYING') {
-            if (this.currentLane > -1) {
-                this.currentLane--;
-                this.targetX = LANES[this.currentLane + 1]; 
-                spawnSparks3D(this.group.position.x, this.y + 0.2, this.group.position.z, COLOR_CYAN);
-                audio.playSlideSFX();
-            }
+            this.isSteeringLeft = isActive;
         }
     }
 
-    steerRight() {
+    steerRight(isActive) {
         if (gameState === 'PLAYING') {
-            if (this.currentLane < 1) {
-                this.currentLane++;
-                this.targetX = LANES[this.currentLane + 1];
-                spawnSparks3D(this.group.position.x, this.y + 0.2, this.group.position.z, COLOR_CYAN);
-                audio.playSlideSFX();
-            }
+            this.isSteeringRight = isActive;
         }
     }
 
@@ -1513,12 +1500,28 @@ class Player3D {
             }
         }
 
+        // Apply Free Roaming Steering & Banking (Leaning into turns!)
+        let targetBank = 0;
+        if (this.isSteeringLeft) {
+            this.group.position.x -= this.steeringSpeed * dt;
+            targetBank = 0.65; // Lean left
+        } else if (this.isSteeringRight) {
+            this.group.position.x += this.steeringSpeed * dt;
+            targetBank = -0.65; // Lean right
+        }
+        
+        // Hard limits on wide road
+        const maxSteer = (ROAD_WIDTH / 2) - 1.5;
+        if (this.group.position.x < -maxSteer) this.group.position.x = -maxSteer;
+        if (this.group.position.x > maxSteer) this.group.position.x = maxSteer;
+
+        // Smoothly interpolate banking rotation
+        this.bankAngle += (targetBank - this.bankAngle) * 12 * dt;
+        this.group.rotation.z = this.bankAngle;
+
         if (!this.isSliding) {
             this.group.position.y = this.y;
         }
-
-        const currentTargetX = LANES[this.currentLane + 1];
-        this.group.position.x += (currentTargetX - this.group.position.x) * this.laneSpeed * dt;
 
         this.animTime += dt * gameSpeed * 0.35;
         
@@ -1594,14 +1597,14 @@ class VictoryGate3D {
         });
 
         this.pillarLeft = new THREE.Mesh(pillarGeo, pillarMat);
-        this.pillarLeft.position.set(-LANE_WIDTH - 1.2, 3.0, 0);
+        this.pillarLeft.position.set(-ROAD_WIDTH/2 - 1.0, 3.0, 0);
         this.group.add(this.pillarLeft);
 
         this.pillarRight = this.pillarLeft.clone();
-        this.pillarRight.position.x = LANE_WIDTH + 1.2;
+        this.pillarRight.position.x = ROAD_WIDTH/2 + 1.0;
         this.group.add(this.pillarRight);
 
-        const beamGeo = new THREE.BoxGeometry(7.0, 0.6, 0.6);
+        const beamGeo = new THREE.BoxGeometry(ROAD_WIDTH + 3.0, 0.6, 0.6);
         const beamMat = new THREE.MeshStandardMaterial({ 
             color: COLOR_CYAN, 
             emissive: COLOR_CYAN, 
@@ -1661,7 +1664,7 @@ class VictoryGate3D {
 class Obstacle3D {
     constructor() {
         this.z = -280; 
-        this.lane = Math.floor(Math.random() * 3) - 1; 
+        this.x = (Math.random() - 0.5) * (ROAD_WIDTH - 4); // Spawn anywhere on the wide road!
         this.type = Math.floor(Math.random() * 3);
         this.dodged = false;
 
@@ -1763,8 +1766,7 @@ class Obstacle3D {
             this.group.add(frame);
         }
 
-        const spawnX = LANES[this.lane + 1];
-        this.group.position.set(spawnX, 0, this.z);
+        this.group.position.set(this.x, 0, this.z);
         scene.add(this.group);
     }
 
@@ -1801,7 +1803,7 @@ function checkCollision3D(p, o) {
         return false;
     }
 
-    const oX = LANES[o.lane + 1];
+    const oX = o.x;
     if (Math.abs(pX - oX) > (p.width / 2 + o.width / 2 - 0.25)) {
         return false;
     }
@@ -1824,7 +1826,7 @@ function checkCoinCollision(p, c) {
     const pX = p.group.position.x;
     const pY = p.group.position.y;
 
-    const cX = LANES[c.lane + 1];
+    const cX = c.x;
     const cZ = c.z;
     const cY = c.height; 
 
@@ -1839,7 +1841,7 @@ function checkFruitCollision(p, f) {
     const pX = p.group.position.x;
     const pY = p.group.position.y;
 
-    const fX = LANES[f.lane + 1];
+    const fX = f.x;
     const fZ = f.z;
     const fY = f.group.position.y; 
 
@@ -1854,7 +1856,7 @@ function checkPowerBoxCollision(p, pb) {
     const pX = p.group.position.x;
     const pY = p.group.position.y;
 
-    const pbX = LANES[pb.lane + 1];
+    const pbX = pb.x;
     const pbZ = pb.z;
     const pbY = 0.85;
 
@@ -1867,12 +1869,12 @@ function transitionLevelTheme(level) {
 }
 
 // --- INPUT TRIGGERS ---
-function steerLeft() {
-    player.steerLeft();
+function setSteerLeft(active) {
+    player.steerLeft(active);
 }
 
-function steerRight() {
-    player.steerRight();
+function setSteerRight(active) {
+    player.steerRight(active);
 }
 
 function triggerJump() {
@@ -1891,11 +1893,11 @@ function stopSlide() {
 window.addEventListener('keydown', (e) => {
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
         e.preventDefault();
-        steerLeft();
+        setSteerLeft(true);
     }
     if (e.code === 'ArrowRight' || e.code === 'KeyD') {
         e.preventDefault();
-        steerRight();
+        setSteerRight(true);
     }
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         e.preventDefault();
@@ -1908,24 +1910,38 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        setSteerLeft(false);
+    }
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        setSteerRight(false);
+    }
     if (e.code === 'ArrowDown' || e.code === 'KeyS') {
         stopSlide();
     }
 });
 
 // Touch controls
-mobileLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); steerLeft(); });
-mobileRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); steerRight(); });
+mobileLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setSteerLeft(true); });
+mobileLeftBtn.addEventListener('touchend', (e) => { e.preventDefault(); setSteerLeft(false); });
+
+mobileRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setSteerRight(true); });
+mobileRightBtn.addEventListener('touchend', (e) => { e.preventDefault(); setSteerRight(false); });
+
 mobileJumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
 mobileSlideBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startSlide(); });
 mobileSlideBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopSlide(); });
 
-// Mouse support
-mobileLeftBtn.addEventListener('mousedown', (e) => { e.preventDefault(); steerLeft(); });
-mobileRightBtn.addEventListener('mousedown', (e) => { e.preventDefault(); steerRight(); });
+// Mouse support for mobile UI
+mobileLeftBtn.addEventListener('mousedown', (e) => { e.preventDefault(); setSteerLeft(true); });
+mobileLeftBtn.addEventListener('mouseup', (e) => { e.preventDefault(); setSteerLeft(false); });
+
+mobileRightBtn.addEventListener('mousedown', (e) => { e.preventDefault(); setSteerRight(true); });
+mobileRightBtn.addEventListener('mouseup', (e) => { e.preventDefault(); setSteerRight(false); });
+
 mobileJumpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); triggerJump(); });
 mobileSlideBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startSlide(); });
-window.addEventListener('mouseup', () => { stopSlide(); });
+window.addEventListener('mouseup', () => { stopSlide(); setSteerLeft(false); setSteerRight(false); });
 
 // --- GAME STATE FLOWS ---
 function init() {
@@ -1964,7 +1980,8 @@ function init() {
 
     player.y = 0.1;
     player.vy = 0;
-    player.currentLane = 0;
+    player.isSteeringLeft = false;
+    player.isSteeringRight = false;
     player.group.position.x = 0;
     player.isJumping = false;
     player.isDoubleJumping = false;
@@ -2225,8 +2242,8 @@ function tick() {
         // Spawning Flying Mystery Power-up Boxes periodically! Every 12 seconds!
         powerBoxTimer += dt;
         if (powerBoxTimer >= 12.0 && distanceRun < LEVEL_DISTANCE_GOAL - 150) {
-            const lane = Math.floor(Math.random() * 3) - 1;
-            powerBoxes.push(new PowerBox3D(lane, -280));
+            const rx = (Math.random() - 0.5) * (ROAD_WIDTH - 4);
+            powerBoxes.push(new PowerBox3D(rx, -280));
             powerBoxTimer = 0;
         }
 
@@ -2324,8 +2341,8 @@ function tick() {
         // Spawning 3D Collectible Fruits
         fruitTimer += dt;
         if (fruitTimer >= 3.5 && distanceRun < LEVEL_DISTANCE_GOAL - 100) {
-            const lane = Math.floor(Math.random() * 3) - 1;
-            fruits.push(new Fruit3D(lane, -280));
+            const rx = (Math.random() - 0.5) * (ROAD_WIDTH - 4);
+            fruits.push(new Fruit3D(rx, -280));
             fruitTimer = 0;
         }
 
@@ -2452,20 +2469,22 @@ function tick() {
         }
     }
 
-    // Camera Follow (Only in standard play states)
+    // Camera Follow Smooth Tracking with Lookahead
     if (player && gameState !== 'VICTORY') {
         const targetCamY = player.isSliding ? 2.8 : 4.2 + (player.y - 0.1) * 0.4;
         camera.position.y += (targetCamY - camera.position.y) * 0.1;
         
+        // Smoothly follow player X with a slight offset
+        camera.position.x += (player.group.position.x * 0.65 - camera.position.x) * 6 * dt;
+        
         const targetLookY = 1.3 + (player.y - 0.1) * 0.25;
-        camera.lookAt(0, targetLookY, 0);
+        // Camera looks slightly ahead of player
+        camera.lookAt(player.group.position.x * 0.4, targetLookY, -10);
 
         if (cameraShake > 0) {
-            camera.position.x = (Math.random() - 0.5) * cameraShake;
+            camera.position.x += (Math.random() - 0.5) * cameraShake;
             camera.position.y += (Math.random() - 0.5) * cameraShake;
             cameraShake -= dt * 4;
-        } else {
-            camera.position.x = 0;
         }
     }
 
