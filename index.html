@@ -60,7 +60,7 @@
             
             <div class="menu-side-left">
                 <div class="menu-btn-icon"><i class="fas fa-gift"></i><span>SOVG'ALAR</span></div>
-                <div class="menu-btn-icon"><i class="fas fa-shopping-cart"></i><span>DO'KON</span></div>
+                <div class="menu-btn-icon" id="shopBtn"><i class="fas fa-shopping-cart"></i><span>DO'KON</span></div>
                 <div class="menu-btn-icon"><i class="fas fa-user-ninja"></i><span>QAHRAMON</span></div>
             </div>
 
@@ -76,6 +76,54 @@
             <div class="menu-bottom">
                 <h2 class="tap-to-play animate-pulse">O'YINNI BOSHLASH UCHUN EKRANNI BOSING!</h2>
                 <button class="hidden-btn" id="startBtn">START</button>
+            </div>
+        </div>
+
+        <!-- Glassmorphic Shop Screen Overlay -->
+        <div class="overlay hidden shop-overlay" id="shopScreen">
+            <div class="shop-container">
+                <div class="shop-header">
+                    <h2><i class="fas fa-store"></i> SKINLAR DO'KONI</h2>
+                    <div class="shop-coins">
+                        <i class="fas fa-coins text-gold"></i> <span id="shopBankCoins">0</span>
+                    </div>
+                </div>
+
+                <div class="shop-grid">
+                    <!-- Default Skin -->
+                    <div class="skin-card">
+                        <div class="skin-icon default-skin-bg"><i class="fas fa-user-ninja"></i></div>
+                        <h3>KLASSIK NINJA</h3>
+                        <p class="skin-desc">Standart Neon Kiber-Kostyum.</p>
+                        <button class="buy-skin-btn equipped" data-skin="DEFAULT" data-price="0">TANLANGAN</button>
+                    </div>
+
+                    <!-- Golden Samurai -->
+                    <div class="skin-card">
+                        <div class="skin-icon gold-skin-bg"><i class="fas fa-user-ninja"></i></div>
+                        <h3 class="text-gold">OLTIN SAMURAY</h3>
+                        <p class="skin-desc">Noyob oltin zirh. Juda boy ko'rinish.</p>
+                        <button class="buy-skin-btn locked" data-skin="GOLDEN_SAMURAI" data-price="500">
+                            <i class="fas fa-coins text-gold"></i> 500
+                        </button>
+                    </div>
+
+                    <!-- Cyber Demon -->
+                    <div class="skin-card">
+                        <div class="skin-icon demon-skin-bg"><i class="fas fa-ghost"></i></div>
+                        <h3 class="text-red">KIBER-JIN</h3>
+                        <p class="skin-desc">O'ta qorong'u va xavfli ko'rinish.</p>
+                        <button class="buy-skin-btn locked" data-skin="CYBER_DEMON" data-price="1000">
+                            <i class="fas fa-coins text-gold"></i> 1000
+                        </button>
+                    </div>
+                </div>
+
+                <div class="shop-footer">
+                    <button class="btn btn-secondary" id="closeShopBtn">
+                        <i class="fas fa-times"></i> ORQAGA QAYTISH
+                    </button>
+                </div>
             </div>
         </div>
 
